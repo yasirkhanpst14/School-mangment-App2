@@ -1,20 +1,19 @@
 import React from 'react';
 import { StudentRecord, GRADES } from '../types';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { Users, GraduationCap, TrendingUp } from 'lucide-react';
+import { Users, GraduationCap, TrendingUp, Trophy } from 'lucide-react';
+import { SCHOOL_NAME } from '../constants';
 
 interface DashboardProps {
   students: StudentRecord[];
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
 export const Dashboard: React.FC<DashboardProps> = ({ students }) => {
   
   const gradeDistribution = GRADES.map(grade => ({
-    name: `Grade ${grade}`,
+    name: `Class ${grade}`,
     value: students.filter(s => s.grade === grade).length
   }));
 
@@ -36,76 +35,121 @@ export const Dashboard: React.FC<DashboardProps> = ({ students }) => {
     });
 
     return {
-      grade: `Grade ${grade}`,
+      grade: `Class ${grade}`,
       avgScore: studentCount > 0 ? Math.round(totalScore / studentCount) : 0
     };
   });
 
+  const overallAvg = Math.round(performanceData.reduce((acc, curr) => acc + curr.avgScore, 0) / 5);
+
   return (
-    <div className="p-6 space-y-6 animate-in fade-in duration-500">
-      <h2 className="text-2xl font-bold text-slate-800 mb-4">School Overview</h2>
+    <div className="p-6 md:p-8 space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Admin Dashboard</h2>
+            <p className="text-slate-500 mt-1 font-medium">{SCHOOL_NAME} Overview</p>
+        </div>
+        <div className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 shadow-sm">
+            Academic Session 2024-25
+        </div>
+      </div>
       
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center space-x-4">
-          <div className="p-3 bg-indigo-100 rounded-full text-indigo-600">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4 hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-indigo-50 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+          <div className="p-3.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-600/30 relative z-10">
             <Users size={24} />
           </div>
-          <div>
-            <p className="text-sm text-slate-500">Total Students</p>
-            <h3 className="text-2xl font-bold text-slate-800">{totalStudents}</h3>
+          <div className="relative z-10">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Students</p>
+            <h3 className="text-3xl font-black text-slate-800">{totalStudents}</h3>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center space-x-4">
-          <div className="p-3 bg-emerald-100 rounded-full text-emerald-600">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4 hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+          <div className="p-3.5 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/30 relative z-10">
             <GraduationCap size={24} />
           </div>
-          <div>
-            <p className="text-sm text-slate-500">Active Grades</p>
-            <h3 className="text-2xl font-bold text-slate-800">5</h3>
+          <div className="relative z-10">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Active Classes</p>
+            <h3 className="text-3xl font-black text-slate-800">5</h3>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center space-x-4">
-          <div className="p-3 bg-amber-100 rounded-full text-amber-600">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4 hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-amber-50 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+          <div className="p-3.5 bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-500/30 relative z-10">
             <TrendingUp size={24} />
           </div>
-          <div>
-            <p className="text-sm text-slate-500">Sem 1 Avg Score</p>
-            <h3 className="text-2xl font-bold text-slate-800">
-              {Math.round(performanceData.reduce((acc, curr) => acc + curr.avgScore, 0) / 5)}%
+          <div className="relative z-10">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Avg Score (Sem 1)</p>
+            <h3 className="text-3xl font-black text-slate-800">
+              {overallAvg}%
             </h3>
+          </div>
+        </div>
+        
+         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl shadow-lg text-white flex items-center space-x-4 relative overflow-hidden">
+          <div className="absolute right-0 bottom-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mb-10"></div>
+          <div className="p-3.5 bg-white/20 rounded-xl backdrop-blur-sm relative z-10">
+            <Trophy size={24} />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs font-bold text-indigo-100 uppercase tracking-wide">Top Class</p>
+            <h3 className="text-2xl font-black text-white">Class 5</h3>
           </div>
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-80">
-          <h3 className="text-lg font-semibold mb-4">Students per Grade</h3>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={gradeDistribution}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-96 flex flex-col">
+          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center">
+            <div className="w-1 h-6 bg-indigo-500 rounded-full mr-3"></div>
+            Student Enrollment
+          </h3>
+          <div className="flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={gradeDistribution}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                <Tooltip 
+                    cursor={{fill: '#f8fafc'}}
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                />
+                <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={50} />
+                </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-80">
-          <h3 className="text-lg font-semibold mb-4">Grade Performance (Sem 1 Avg)</h3>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={performanceData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" domain={[0, 100]} />
-              <YAxis dataKey="grade" type="category" width={80} />
-              <Tooltip />
-              <Bar dataKey="avgScore" fill="#10b981" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-96 flex flex-col">
+          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center">
+             <div className="w-1 h-6 bg-emerald-500 rounded-full mr-3"></div>
+             Performance Overview
+          </h3>
+          <div className="flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={performanceData}>
+                <defs>
+                    <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="grade" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} domain={[0, 100]} />
+                <Tooltip 
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                />
+                <Area type="monotone" dataKey="avgScore" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorAvg)" />
+                </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

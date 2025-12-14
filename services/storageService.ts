@@ -1,7 +1,7 @@
-import { StudentRecord } from "../types";
+import { StudentRecord, SUBJECTS } from "../types";
 import { INITIAL_STUDENTS } from "../constants";
 
-const STORAGE_KEY = 'school_manager_data_v1';
+const STORAGE_KEY = 'school_manager_data_v3'; // Bumped version
 
 export const getStudents = (): StudentRecord[] => {
   const data = localStorage.getItem(STORAGE_KEY);
@@ -21,34 +21,37 @@ export const saveStudents = (students: StudentRecord[]) => {
 };
 
 export const exportToCSV = (students: StudentRecord[]) => {
-  // Flatten data for CSV
+  // Generate dynamic headers for subjects
+  const sem1Headers = SUBJECTS.map(s => `Sem1_${s}`);
+  const sem2Headers = SUBJECTS.map(s => `Sem2_${s}`);
+
   const headers = [
-    'SerialNo', 'Name', 'FatherName', 'Grade', 'DOB', 'FormB', 'Contact',
-    // Sem 1
-    'Sem1_Total', 'Sem1_Percentage',
-    // Sem 2
-    'Sem2_Total', 'Sem2_Percentage'
+    'SerialNo', 'RegistrationNo', 'Name', 'FatherName', 'Grade', 'DOB', 'FormB', 'Contact',
+    ...sem1Headers,
+    ...sem2Headers
   ];
   
   const rows = students.map(s => {
-    const sem1Total = s.results.sem1 ? Object.values(s.results.sem1.marks).reduce((a, b) => a + b, 0) : 0;
-    const sem1Perc = s.results.sem1 ? (sem1Total / 900 * 100).toFixed(2) : '0';
-    
-    const sem2Total = s.results.sem2 ? Object.values(s.results.sem2.marks).reduce((a, b) => a + b, 0) : 0;
-    const sem2Perc = s.results.sem2 ? (sem2Total / 900 * 100).toFixed(2) : '0';
+    // Helper to get mark or empty string
+    const getMark = (sem: 1 | 2, subj: string) => {
+      const res = sem === 1 ? s.results.sem1 : s.results.sem2;
+      return res?.marks?.[subj as any] ?? '';
+    };
+
+    const sem1Values = SUBJECTS.map(subj => getMark(1, subj));
+    const sem2Values = SUBJECTS.map(subj => getMark(2, subj));
 
     return [
       s.serialNo,
-      `"${s.name}"`, // Quote strings with spaces
+      s.registrationNo || '',
+      `"${s.name}"`,
       `"${s.fatherName}"`,
       s.grade,
       s.dob,
       s.formB,
       s.contact,
-      sem1Total,
-      `${sem1Perc}%`,
-      sem2Total,
-      `${sem2Perc}%`
+      ...sem1Values,
+      ...sem2Values
     ].join(',');
   });
 
@@ -57,7 +60,7 @@ export const exportToCSV = (students: StudentRecord[]) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', 'school_data_export.csv');
+  link.setAttribute('download', `GPS_No1_Bazar_Data_${new Date().toISOString().split('T')[0]}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();

@@ -27,7 +27,8 @@ export const SUBJECTS: Subject[] = [
 
 export interface Student {
   id: string;
-  serialNo: string;
+  serialNo: string; // Class Roll No
+  registrationNo: string; // Admission/Registration No
   name: string;
   fatherName: string;
   dob: string;

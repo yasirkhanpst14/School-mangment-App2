@@ -1,11 +1,14 @@
 import { StudentRecord } from "./types";
 
+export const SCHOOL_NAME = "GPS No 1 Bazar";
+
 export const TOTAL_MARKS_PER_SUBJECT = 100;
 
 export const INITIAL_STUDENTS: StudentRecord[] = [
   {
     id: '1',
-    serialNo: 'S-101',
+    serialNo: '101',
+    registrationNo: 'R-2024-001',
     name: 'Ahmed Khan',
     fatherName: 'Bilal Khan',
     dob: '2015-05-12',
@@ -32,7 +35,8 @@ export const INITIAL_STUDENTS: StudentRecord[] = [
   },
   {
     id: '2',
-    serialNo: 'S-102',
+    serialNo: '102',
+    registrationNo: 'R-2024-002',
     name: 'Fatima Ali',
     fatherName: 'Zafar Ali',
     dob: '2016-08-20',
