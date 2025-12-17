@@ -219,22 +219,22 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-slate-50">
-        <header className="bg-white shadow-sm border-b border-slate-200 h-16 flex items-center px-4 md:px-8 justify-between shrink-0 no-print z-10 sticky top-0">
+        <header className="bg-emerald-50 shadow-sm border-b border-emerald-100 h-16 flex items-center px-4 md:px-8 justify-between shrink-0 no-print z-10 sticky top-0">
             <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                 <button 
                     onClick={() => setIsSidebarOpen(true)} 
-                    className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    className="lg:hidden p-2 -ml-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100 rounded-lg transition-colors"
                 >
                     <Menu size={24} />
                 </button>
-                <div className="h-6 w-px bg-slate-200 hidden lg:block"></div>
-                <h2 className="text-lg md:text-xl font-bold text-slate-800 capitalize truncate tracking-tight">
+                <div className="h-6 w-px bg-emerald-200 hidden lg:block"></div>
+                <h2 className="text-lg md:text-xl font-bold text-emerald-900 capitalize truncate tracking-tight">
                     {currentView === 'profile' ? 'Student Profile' : currentView}
                 </h2>
             </div>
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                <span className="hidden md:inline-flex text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 items-center">
-                    <School size={12} className="mr-1.5" />
+                <span className="hidden md:inline-flex text-xs font-semibold text-emerald-800 bg-white px-2.5 py-1 rounded-full border border-emerald-200 items-center shadow-sm">
+                    <School size={12} className="mr-1.5 text-emerald-600" />
                     {SCHOOL_NAME}
                 </span>
             </div>
