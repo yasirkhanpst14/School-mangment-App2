@@ -27,7 +27,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ students }) => {
     
     studentsInGrade.forEach(s => {
       if (s.results.sem1) {
-        const marks = Object.values(s.results.sem1.marks);
+        const marks = Object.values(s.results.sem1.marks) as number[];
         const avg = marks.reduce((a: number, b: number) => a + b, 0) / marks.length;
         totalScore += avg;
         studentCount++;

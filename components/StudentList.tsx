@@ -65,19 +65,19 @@ export const StudentList: React.FC<StudentListProps> = ({
         </div>
         
         <div className="flex flex-wrap gap-3 w-full xl:w-auto">
-           <label className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 cursor-pointer text-sm font-semibold shadow-sm transition-all whitespace-nowrap group">
-            <Upload size={18} className="mr-2 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+           <label className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:border-emerald-300 hover:text-emerald-600 cursor-pointer text-sm font-semibold shadow-sm transition-all whitespace-nowrap group">
+            <Upload size={18} className="mr-2 text-slate-400 group-hover:text-emerald-600 transition-colors" />
             <span className="flex flex-col items-start leading-none gap-0.5">
                 <span>Bulk Upload</span>
                 <span className="text-[10px] text-slate-400 font-normal">Students & Marks</span>
             </span>
             <input type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
           </label>
-          <button onClick={onExport} className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 text-sm font-semibold shadow-sm transition-all whitespace-nowrap group">
-            <FileDown size={18} className="mr-2 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+          <button onClick={onExport} className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:border-emerald-300 hover:text-emerald-600 text-sm font-semibold shadow-sm transition-all whitespace-nowrap group">
+            <FileDown size={18} className="mr-2 text-slate-400 group-hover:text-emerald-600 transition-colors" />
             Export Data
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 transition-all whitespace-nowrap">
+          <button onClick={() => setIsModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-semibold shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all whitespace-nowrap">
             <Plus size={20} className="mr-2" />
             Add Student
           </button>
@@ -87,7 +87,7 @@ export const StudentList: React.FC<StudentListProps> = ({
       {/* Search & Filters Bar */}
       <div className="flex flex-col md:flex-row gap-4 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative flex-1 group">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 bg-slate-100 rounded-lg text-slate-400 group-focus-within:bg-indigo-50 group-focus-within:text-indigo-600 transition-colors">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 bg-slate-100 rounded-lg text-slate-400 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-600 transition-colors">
             <Search size={18} />
           </div>
           <input 
@@ -137,7 +137,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                   <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                             <span className="p-1.5 rounded bg-indigo-50 text-indigo-600">
+                             <span className="p-1.5 rounded bg-emerald-50 text-emerald-600">
                                 <Hash size={14} />
                              </span>
                              <span className="font-mono font-medium text-slate-700">{student.registrationNo || '-'}</span>
@@ -159,7 +159,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                         {/* Quick Add Marks Button */}
                         <button 
                             onClick={() => onSelectStudent(student, 'sem1')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg transition-all text-xs font-semibold border border-indigo-100 hover:border-indigo-600"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-xs font-semibold border border-emerald-100 hover:border-emerald-600"
                         >
                             <PenTool size={14} />
                             Add Marks
@@ -167,7 +167,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                         <div className="h-6 w-px bg-slate-200 mx-1"></div>
                        <button 
                         onClick={() => onSelectStudent(student)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                         title="View Full Profile"
                       >
                         <ClipboardList size={18} />
@@ -221,14 +221,14 @@ export const StudentList: React.FC<StudentListProps> = ({
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Registration No</label>
                   <div className="relative">
                     <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input required className="w-full pl-10 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium" 
+                    <input required className="w-full pl-10 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium" 
                       placeholder="e.g. R-2024-001"
                       value={newStudent.registrationNo} onChange={e => setNewStudent({...newStudent, registrationNo: e.target.value})} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Roll No</label>
-                  <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium" 
+                  <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium" 
                      placeholder="e.g. 101"
                     value={newStudent.serialNo} onChange={e => setNewStudent({...newStudent, serialNo: e.target.value})} />
                 </div>
@@ -237,12 +237,12 @@ export const StudentList: React.FC<StudentListProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                  <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Full Name</label>
-                    <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
+                    <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                     value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} />
                  </div>
                  <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Father's Name</label>
-                    <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
+                    <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                     value={newStudent.fatherName} onChange={e => setNewStudent({...newStudent, fatherName: e.target.value})} />
                  </div>
               </div>
@@ -251,7 +251,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                  <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Class / Grade</label>
                   <div className="relative">
-                      <select className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-white font-medium appearance-none"
+                      <select className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all bg-white font-medium appearance-none"
                          value={newStudent.grade} onChange={e => setNewStudent({...newStudent, grade: e.target.value as Grade})}>
                            {GRADES.map(g => <option key={g} value={g}>Class {g}</option>)}
                       </select>
@@ -260,7 +260,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Date of Birth</label>
-                  <input type="date" required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-600"
+                  <input type="date" required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-slate-600"
                      value={newStudent.dob} onChange={e => setNewStudent({...newStudent, dob: e.target.value})} />
                 </div>
               </div>
@@ -270,14 +270,14 @@ export const StudentList: React.FC<StudentListProps> = ({
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Contact No</label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input required className="w-full pl-10 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
+                    <input required className="w-full pl-10 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                         placeholder="0300-1234567"
                         value={newStudent.contact} onChange={e => setNewStudent({...newStudent, contact: e.target.value})} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Form B / CNIC</label>
-                  <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
+                  <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                      placeholder="12345-1234567-1"
                      value={newStudent.formB} onChange={e => setNewStudent({...newStudent, formB: e.target.value})} />
                 </div>
@@ -285,7 +285,7 @@ export const StudentList: React.FC<StudentListProps> = ({
 
               <div className="pt-6 flex justify-end gap-3 shrink-0 border-t border-slate-100 mt-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold transition-colors">Cancel</button>
-                <button type="submit" className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-semibold shadow-lg shadow-indigo-600/30 transition-all hover:shadow-xl hover:-translate-y-0.5">Create Profile</button>
+                <button type="submit" className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:shadow-xl hover:-translate-y-0.5">Create Profile</button>
               </div>
             </form>
           </div>

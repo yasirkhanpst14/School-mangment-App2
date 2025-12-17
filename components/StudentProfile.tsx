@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { StudentRecord, SUBJECTS, Subject, SemesterResult } from '../types';
 import { TOTAL_MARKS_PER_SUBJECT, SCHOOL_NAME } from '../constants';
-import { ArrowLeft, Save, Sparkles, Printer, FileText, User, Calendar, CreditCard, Phone, Hash, BookOpen, PenTool } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, Printer, FileText, User, Calendar, CreditCard, Phone, Hash, BookOpen, PenTool, Award, School } from 'lucide-react';
 import { generateStudentReport } from '../services/geminiService';
 
 interface StudentProfileProps {
   student: StudentRecord;
   onBack: () => void;
   onUpdate: (updatedStudent: StudentRecord) => void;
-  initialTab?: 'profile' | 'sem1' | 'sem2';
+  initialTab?: 'profile' | 'sem1' | 'sem2' | 'dmc';
 }
 
 export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack, onUpdate, initialTab = 'profile' }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'sem1' | 'sem2'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc'>(initialTab);
   const [isEditingMarks, setIsEditingMarks] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -70,8 +70,157 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
     setIsGenerating(false);
   };
 
-  const printResult = () => {
+  const printDocument = () => {
     window.print();
+  };
+
+  const renderDMC = () => {
+    // Calculate Grand Totals based on available semesters
+    const sem1 = student.results.sem1;
+    const sem2 = student.results.sem2;
+    
+    let grandTotalObtained = 0;
+    let grandTotalMax = 0;
+
+    const subjectsData = SUBJECTS.map(sub => {
+        const s1 = sem1?.marks[sub];
+        const s2 = sem2?.marks[sub];
+        
+        let totalSubMax = 0;
+        let totalSubObt = 0;
+
+        if (s1 !== undefined) { totalSubMax += 100; totalSubObt += s1; }
+        if (s2 !== undefined) { totalSubMax += 100; totalSubObt += s2; }
+        
+        grandTotalMax += totalSubMax;
+        grandTotalObtained += totalSubObt;
+
+        return { subject: sub, max: totalSubMax, obt: totalSubObt };
+    });
+
+    const percentage = grandTotalMax > 0 ? ((grandTotalObtained / grandTotalMax) * 100).toFixed(2) : "0.00";
+    let grade = "F";
+    const p = Number(percentage);
+    if(p >= 80) grade = "A+";
+    else if(p >= 70) grade = "A";
+    else if(p >= 60) grade = "B";
+    else if(p >= 50) grade = "C";
+    else if(p >= 40) grade = "D";
+
+    return (
+        <div className="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200 animate-in fade-in duration-300">
+            <div className="flex justify-end mb-4 no-print">
+                <button onClick={printDocument} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/30 transition-all font-semibold">
+                    <Printer size={18} /> Print DMC
+                </button>
+            </div>
+
+            {/* Actual DMC Layout - KPK Style */}
+            <div className="border-4 border-double border-emerald-800 p-6 md:p-10 max-w-[210mm] mx-auto bg-white print:border-4 print:p-8 print:w-full print:max-w-none">
+                <div className="text-center border-b-2 border-emerald-800 pb-6 mb-6">
+                    <div className="flex justify-center mb-4">
+                        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center border-2 border-emerald-800 text-emerald-800">
+                            <School size={40} />
+                        </div>
+                    </div>
+                    <h1 className="text-3xl font-black text-emerald-900 uppercase tracking-tight">{SCHOOL_NAME}</h1>
+                    <p className="text-emerald-700 font-bold uppercase tracking-widest text-sm mt-1">Elementary & Secondary Education</p>
+                    <h2 className="text-xl font-bold text-slate-800 mt-6 inline-block border-b border-slate-800 px-6 pb-1">DETAILED MARKS CERTIFICATE</h2>
+                    <p className="text-slate-500 text-sm mt-2 font-medium">Academic Session 2024-2025</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8 text-sm font-medium">
+                    <div className="flex border-b border-slate-300 pb-1">
+                        <span className="w-32 text-emerald-800 font-bold uppercase text-xs">Student Name:</span>
+                        <span className="flex-1 text-slate-900 font-bold uppercase">{student.name}</span>
+                    </div>
+                    <div className="flex border-b border-slate-300 pb-1">
+                        <span className="w-32 text-emerald-800 font-bold uppercase text-xs">Father Name:</span>
+                        <span className="flex-1 text-slate-900 font-bold uppercase">{student.fatherName}</span>
+                    </div>
+                    <div className="flex border-b border-slate-300 pb-1">
+                        <span className="w-32 text-emerald-800 font-bold uppercase text-xs">Class:</span>
+                        <span className="flex-1 text-slate-900">{student.grade}</span>
+                    </div>
+                    <div className="flex border-b border-slate-300 pb-1">
+                        <span className="w-32 text-emerald-800 font-bold uppercase text-xs">Roll No:</span>
+                        <span className="flex-1 text-slate-900 font-mono">{student.serialNo}</span>
+                    </div>
+                    <div className="flex border-b border-slate-300 pb-1">
+                        <span className="w-32 text-emerald-800 font-bold uppercase text-xs">Registration No:</span>
+                        <span className="flex-1 text-slate-900 font-mono">{student.registrationNo}</span>
+                    </div>
+                    <div className="flex border-b border-slate-300 pb-1">
+                        <span className="w-32 text-emerald-800 font-bold uppercase text-xs">Date of Birth:</span>
+                        <span className="flex-1 text-slate-900">{student.dob}</span>
+                    </div>
+                </div>
+
+                <table className="w-full text-sm border-collapse border border-slate-800 mb-8">
+                    <thead>
+                        <tr className="bg-emerald-50 text-emerald-900">
+                            <th className="border border-slate-600 py-3 px-4 text-left uppercase font-bold text-xs">Subject</th>
+                            <th className="border border-slate-600 py-3 px-2 text-center uppercase font-bold text-xs w-24">Total Marks</th>
+                            <th className="border border-slate-600 py-3 px-2 text-center uppercase font-bold text-xs w-24">Obtained</th>
+                            <th className="border border-slate-600 py-3 px-2 text-center uppercase font-bold text-xs w-32">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {subjectsData.map((row, idx) => (
+                            <tr key={idx}>
+                                <td className="border border-slate-600 py-2.5 px-4 font-bold text-slate-800">{row.subject}</td>
+                                <td className="border border-slate-600 py-2.5 px-2 text-center font-mono">{row.max}</td>
+                                <td className="border border-slate-600 py-2.5 px-2 text-center font-mono font-bold">{row.obt}</td>
+                                <td className="border border-slate-600 py-2.5 px-2 text-center text-xs italic text-slate-500">
+                                    {row.obt >= (row.max * 0.4) ? 'Pass' : 'Fail'}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                        <tr className="bg-slate-100 font-bold text-slate-900">
+                            <td className="border border-slate-600 py-3 px-4 uppercase">Grand Total</td>
+                            <td className="border border-slate-600 py-3 px-2 text-center font-mono text-base">{grandTotalMax}</td>
+                            <td className="border border-slate-600 py-3 px-2 text-center font-mono text-base">{grandTotalObtained}</td>
+                            <td className="border border-slate-600 py-3 px-2 text-center"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div className="flex justify-between items-start mb-16 pt-4">
+                    <div className="border border-slate-400 p-4 rounded min-w-[200px]">
+                        <p className="text-xs uppercase font-bold text-slate-500 mb-1">Percentage</p>
+                        <p className="text-2xl font-mono font-bold text-slate-800">{percentage}%</p>
+                    </div>
+                    <div className="border border-slate-400 p-4 rounded min-w-[200px]">
+                        <p className="text-xs uppercase font-bold text-slate-500 mb-1">Grade</p>
+                        <p className="text-2xl font-black text-emerald-800">{grade}</p>
+                    </div>
+                    <div className="border border-slate-400 p-4 rounded min-w-[200px]">
+                        <p className="text-xs uppercase font-bold text-slate-500 mb-1">Status</p>
+                        <p className={`text-2xl font-bold uppercase ${grade === 'F' ? 'text-red-600' : 'text-emerald-700'}`}>
+                            {grade === 'F' ? 'Fail' : 'Pass'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-20 mt-20">
+                    <div className="text-center">
+                        <div className="border-b border-slate-800 mb-2"></div>
+                        <p className="font-bold text-slate-800 uppercase text-xs">Class Teacher Signature</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="border-b border-slate-800 mb-2"></div>
+                        <p className="font-bold text-slate-800 uppercase text-xs">Principal Signature & Stamp</p>
+                    </div>
+                </div>
+                
+                <div className="mt-12 text-center text-[10px] text-slate-400 uppercase tracking-widest">
+                    Generated by Smart School Manager • {new Date().toLocaleDateString()}
+                </div>
+            </div>
+        </div>
+    );
   };
 
   const renderResultView = (sem: 1 | 2) => {
@@ -82,7 +231,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
       return (
         <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
                     <PenToolIcon size={20} />
                 </div>
                 <div>
@@ -93,8 +242,8 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
 
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
              {SUBJECTS.map(sub => (
-               <div key={sub} className="group flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500">
-                 <label className="font-semibold text-slate-700 text-sm group-hover:text-indigo-700 transition-colors">{sub}</label>
+               <div key={sub} className="group flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200 hover:border-emerald-300 transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500">
+                 <label className="font-semibold text-slate-700 text-sm group-hover:text-emerald-700 transition-colors">{sub}</label>
                  <input 
                     type="number" 
                     min="0" 
@@ -110,7 +259,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
            
            <div className="mt-8 flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t border-slate-100">
              <button onClick={() => setIsEditingMarks(false)} className="w-full sm:w-auto px-6 py-3 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold transition-colors">Discard Changes</button>
-             <button onClick={() => saveMarks(sem)} className="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30 font-semibold transition-all hover:-translate-y-0.5">
+             <button onClick={() => saveMarks(sem)} className="w-full sm:w-auto px-8 py-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/30 font-semibold transition-all hover:-translate-y-0.5">
                <Save size={18} className="mr-2" /> Save Results
              </button>
            </div>
@@ -120,15 +269,15 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
 
     if (!hasResult) {
        return (
-         <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed hover:border-indigo-300 transition-colors group cursor-pointer" onClick={() => initMarks(sem)}>
-            <div className="w-20 h-20 bg-indigo-50 group-hover:bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6 transition-colors">
-                <BookOpen size={36} className="text-indigo-400 group-hover:text-indigo-600 transition-colors" />
+         <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed hover:border-emerald-300 transition-colors group cursor-pointer" onClick={() => initMarks(sem)}>
+            <div className="w-20 h-20 bg-emerald-50 group-hover:bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 transition-colors">
+                <BookOpen size={36} className="text-emerald-400 group-hover:text-emerald-600 transition-colors" />
             </div>
             <h3 className="text-slate-800 font-bold text-xl mb-2">No Academic Record Found</h3>
             <p className="text-slate-500 mb-8 max-w-sm mx-auto">Start by adding marks for Semester {sem} to generate reports and insights.</p>
             <button 
               onClick={(e) => { e.stopPropagation(); initMarks(sem); }}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 font-semibold"
+              className="px-8 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 font-semibold"
             >
               Enter Marks Now
             </button>
@@ -137,7 +286,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
     }
 
     // Display Result Card
-    const totalMarks = Object.values(result.marks).reduce((a: number, b: number) => a + b, 0);
+    const totalMarks = (Object.values(result.marks) as number[]).reduce((a: number, b: number) => a + b, 0);
     const maxMarks = SUBJECTS.length * TOTAL_MARKS_PER_SUBJECT;
     const percentage = ((totalMarks / maxMarks) * 100).toFixed(2);
     const percentageNum = Number(percentage);
@@ -149,7 +298,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
     else if(percentageNum < 50) { gradeColor = 'text-orange-600 bg-orange-50 border-orange-100'; gradeLabel = 'D'; }
     else if(percentageNum < 60) { gradeColor = 'text-yellow-600 bg-yellow-50 border-yellow-100'; gradeLabel = 'C'; }
     else if(percentageNum < 70) { gradeColor = 'text-blue-600 bg-blue-50 border-blue-100'; gradeLabel = 'B'; }
-    else if(percentageNum < 80) { gradeColor = 'text-indigo-600 bg-indigo-50 border-indigo-100'; gradeLabel = 'A'; }
+    else if(percentageNum < 80) { gradeColor = 'text-emerald-600 bg-emerald-50 border-emerald-100'; gradeLabel = 'A'; }
 
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-section">
@@ -164,8 +313,8 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
              </div>
            </div>
            <div className="flex gap-2 no-print">
-             <button onClick={() => initMarks(sem)} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 rounded-lg transition-colors text-sm font-semibold shadow-sm">Edit Marks</button>
-             <button onClick={printResult} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all" title="Print Result">
+             <button onClick={() => initMarks(sem)} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 rounded-lg transition-colors text-sm font-semibold shadow-sm">Edit Marks</button>
+             <button onClick={printDocument} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all" title="Print Result">
                 <Printer size={20} />
              </button>
            </div>
@@ -181,7 +330,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-8 mb-8 text-sm bg-slate-50 p-6 rounded-2xl border border-slate-100">
              <div className="flex justify-between sm:justify-start"><span className="w-32 text-slate-500 font-medium uppercase text-xs tracking-wide">Name</span> <span className="font-bold text-slate-800 text-base">{student.name}</span></div>
              <div className="flex justify-between sm:justify-start"><span className="w-32 text-slate-500 font-medium uppercase text-xs tracking-wide">Father Name</span> <span className="font-semibold text-slate-800">{student.fatherName}</span></div>
-             <div className="flex justify-between sm:justify-start"><span className="w-32 text-slate-500 font-medium uppercase text-xs tracking-wide">Reg No</span> <span className="font-semibold text-indigo-700">{student.registrationNo}</span></div>
+             <div className="flex justify-between sm:justify-start"><span className="w-32 text-slate-500 font-medium uppercase text-xs tracking-wide">Reg No</span> <span className="font-semibold text-emerald-700">{student.registrationNo}</span></div>
              <div className="flex justify-between sm:justify-start"><span className="w-32 text-slate-500 font-medium uppercase text-xs tracking-wide">Grade</span> <span className="font-semibold text-slate-800">{student.grade}</span></div>
              <div className="flex justify-between sm:justify-start"><span className="w-32 text-slate-500 font-medium uppercase text-xs tracking-wide">Roll No</span> <span className="font-semibold text-slate-800 font-mono">{student.serialNo}</span></div>
            </div>
@@ -206,14 +355,14 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                  <tr className="bg-slate-50 font-bold border-t border-slate-200">
                    <td className="py-4 pl-6 text-slate-900">Grand Total</td>
                    <td className="py-4 text-right text-slate-900 font-mono">{maxMarks}</td>
-                   <td className="py-4 pr-6 text-right text-indigo-700 font-mono text-xl">{totalMarks} <span className="text-sm font-medium text-slate-500 ml-1">({percentage}%)</span></td>
+                   <td className="py-4 pr-6 text-right text-emerald-700 font-mono text-xl">{totalMarks} <span className="text-sm font-medium text-slate-500 ml-1">({percentage}%)</span></td>
                  </tr>
                </tbody>
              </table>
            </div>
            
            {/* Remarks Section */}
-           <div className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 p-6 rounded-2xl border border-indigo-100/50">
+           <div className="bg-gradient-to-br from-emerald-50/50 to-teal-50/50 p-6 rounded-2xl border border-emerald-100/50">
              <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                 <h4 className="font-bold text-slate-800 flex items-center">
                     <Sparkles size={18} className="text-amber-500 mr-2 fill-amber-500" />
@@ -223,7 +372,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                     <button 
                     onClick={() => generateAIInsight(sem)} 
                     disabled={isGenerating}
-                    className="no-print flex items-center text-xs font-bold bg-white text-indigo-700 px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all border border-indigo-100 whitespace-nowrap"
+                    className="no-print flex items-center text-xs font-bold bg-white text-emerald-700 px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all border border-emerald-100 whitespace-nowrap"
                     >
                     <Sparkles size={14} className="mr-1.5" />
                     {isGenerating ? "Analyzing Performance..." : "Generate Analysis"}
@@ -243,8 +392,8 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in slide-in-from-right duration-300">
-      <div className="flex items-center gap-3 mb-8">
-        <button onClick={onBack} className="no-print p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 text-slate-600 transition-all shadow-sm">
+      <div className="flex items-center gap-3 mb-8 no-print">
+        <button onClick={onBack} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 text-slate-600 transition-all shadow-sm">
             <ArrowLeft size={20} />
         </button>
         <div>
@@ -263,15 +412,21 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
         </button>
         <button 
           onClick={() => setActiveTab('sem1')}
-          className={`flex-1 min-w-[140px] px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'sem1' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+          className={`flex-1 min-w-[140px] px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'sem1' ? 'bg-white text-emerald-600 shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
         >
           Semester 1
         </button>
         <button 
           onClick={() => setActiveTab('sem2')}
-          className={`flex-1 min-w-[140px] px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'sem2' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+          className={`flex-1 min-w-[140px] px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'sem2' ? 'bg-white text-emerald-600 shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
         >
           Semester 2
+        </button>
+        <button 
+          onClick={() => setActiveTab('dmc')}
+          className={`flex-1 min-w-[140px] px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'dmc' ? 'bg-white text-emerald-600 shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+        >
+          DMC
         </button>
       </div>
 
@@ -279,7 +434,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
           <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
              <h2 className="text-xl font-bold text-slate-800">Personal Information</h2>
-             <span className="px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wide border border-indigo-200">
+             <span className="px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wide border border-emerald-200">
                  Grade {student.grade}
              </span>
           </div>
@@ -331,7 +486,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
               <label className="flex items-center text-xs uppercase tracking-wide text-slate-400 font-bold mb-2">
                  <Phone size={14} className="mr-1.5" /> Contact Number
               </label>
-              <div className="text-2xl text-indigo-600 font-bold font-mono tracking-tight">{student.contact}</div>
+              <div className="text-2xl text-emerald-600 font-bold font-mono tracking-tight">{student.contact}</div>
             </div>
           </div>
         </div>
@@ -339,6 +494,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
 
       {activeTab === 'sem1' && renderResultView(1)}
       {activeTab === 'sem2' && renderResultView(2)}
+      {activeTab === 'dmc' && renderDMC()}
 
     </div>
   );
