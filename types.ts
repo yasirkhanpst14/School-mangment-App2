@@ -50,11 +50,14 @@ export interface SemesterResult {
   generatedInsight?: string;
 }
 
+export type AttendanceStatus = 'P' | 'A' | 'L'; // Present, Absent, Leave
+
 export interface StudentRecord extends Student {
   results: {
     sem1?: SemesterResult;
     sem2?: SemesterResult;
   };
+  attendance?: Record<string, AttendanceStatus>; // Date (YYYY-MM-DD) -> Status
 }
 
 export interface DashboardStats {

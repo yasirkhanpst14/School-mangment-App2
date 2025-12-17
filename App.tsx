@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School } from 'lucide-react';
+import { Layout, LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
 import { StudentProfile } from './components/StudentProfile';
-import { StudentRecord, SUBJECTS, Subject } from './types';
+import { AttendanceManager } from './components/AttendanceManager';
+import { Login } from './components/Login';
+import { StudentRecord, SUBJECTS, Subject, AttendanceStatus } from './types';
 import { getStudents, saveStudents, exportToCSV } from './services/storageService';
 import { SCHOOL_NAME } from './constants';
 
@@ -11,11 +13,22 @@ import { SCHOOL_NAME } from './constants';
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'students' | 'profile'>('dashboard');
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('auth_session') === 'active';
+  });
+
+  const [currentView, setCurrentView] = useState<'dashboard' | 'students' | 'profile' | 'attendance'>('dashboard');
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null);
-  const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc'>('profile');
+  const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance'>('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Session State
+  const [session, setSession] = useState<string>(() => {
+    return localStorage.getItem('school_session') || '2024-2025';
+  });
+  const [isEditingSession, setIsEditingSession] = useState(false);
 
   useEffect(() => {
     const loaded = getStudents();
@@ -28,11 +41,30 @@ const App: React.FC = () => {
     }
   }, [students]);
 
+  useEffect(() => {
+    localStorage.setItem('school_session', session);
+  }, [session]);
+
+  const handleLogin = (status: boolean) => {
+    if (status) {
+        sessionStorage.setItem('auth_session', 'active');
+        setIsAuthenticated(true);
+    }
+  };
+
+  const handleLogout = () => {
+    if(confirm("Are you sure you want to log out?")) {
+        sessionStorage.removeItem('auth_session');
+        setIsAuthenticated(false);
+    }
+  };
+
   const handleAddStudent = (newStudentData: any) => {
     const newStudent: StudentRecord = {
       id: generateId(),
       ...newStudentData,
-      results: {}
+      results: {},
+      attendance: {}
     };
     setStudents(prev => [...prev, newStudent]);
   };
@@ -47,7 +79,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleViewProfile = (student: StudentRecord, tab: 'profile' | 'sem1' | 'sem2' | 'dmc' = 'profile') => {
+  const handleViewProfile = (student: StudentRecord, tab: 'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance' = 'profile') => {
     setSelectedStudent(student);
     setProfileInitialTab(tab);
     setCurrentView('profile');
@@ -57,6 +89,26 @@ const App: React.FC = () => {
   const handleUpdateStudent = (updated: StudentRecord) => {
     setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
     setSelectedStudent(updated);
+  };
+
+  const handleBatchUpdateAttendance = (updates: { studentId: string; date: string; status: AttendanceStatus }[]) => {
+    setStudents(prev => {
+        const newStudents = [...prev];
+        updates.forEach(({ studentId, date, status }) => {
+            const idx = newStudents.findIndex(s => s.id === studentId);
+            if (idx !== -1) {
+                const student = newStudents[idx];
+                newStudents[idx] = {
+                    ...student,
+                    attendance: {
+                        ...student.attendance,
+                        [date]: status
+                    }
+                };
+            }
+        });
+        return newStudents;
+    });
   };
 
   const handleImport = (file: File) => {
@@ -130,7 +182,8 @@ const App: React.FC = () => {
                 dob: idxDOB !== -1 ? clean(cols[idxDOB]) : '',
                 formB: idxFormB !== -1 ? clean(cols[idxFormB]) : '',
                 contact: idxContact !== -1 ? clean(cols[idxContact]) : '',
-                results: {}
+                results: {},
+                attendance: {}
               });
               addedCount++;
           }
@@ -147,6 +200,11 @@ const App: React.FC = () => {
     setCurrentView(view);
     setIsSidebarOpen(false);
   };
+
+  // Guard Clause for Authentication
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
@@ -180,6 +238,33 @@ const App: React.FC = () => {
             </button>
         </div>
         
+        {/* Session Manager */}
+        <div className="px-4 py-4 border-b border-white/10">
+          <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-emerald-300 font-bold uppercase tracking-wider flex items-center gap-1">
+                 <CalendarRange size={12} /> Session
+              </span>
+              <button onClick={() => setIsEditingSession(!isEditingSession)} className="text-emerald-200 hover:text-white transition-colors">
+                 <PenLine size={12} />
+              </button>
+            </div>
+            {isEditingSession ? (
+              <input 
+                type="text" 
+                value={session}
+                onChange={(e) => setSession(e.target.value)}
+                onBlur={() => setIsEditingSession(false)}
+                onKeyDown={(e) => e.key === 'Enter' && setIsEditingSession(false)}
+                className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-emerald-400"
+                autoFocus
+              />
+            ) : (
+              <div className="font-mono text-lg font-bold text-white tracking-wide">{session}</div>
+            )}
+          </div>
+        </div>
+
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           <button 
             onClick={() => navigateTo('dashboard')}
@@ -189,6 +274,14 @@ const App: React.FC = () => {
             <span className="font-medium">Dashboard</span>
           </button>
           
+          <button 
+            onClick={() => navigateTo('attendance')}
+            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group border border-transparent ${currentView === 'attendance' ? 'bg-emerald-600/90 text-white shadow-md shadow-emerald-900/20 border-emerald-500/50' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
+          >
+            <CalendarCheck size={20} className={currentView === 'attendance' ? 'text-white' : 'text-emerald-200 group-hover:text-white'} />
+            <span className="font-medium">Attendance</span>
+          </button>
+
           <button 
             onClick={() => navigateTo('students')}
             className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group border border-transparent ${currentView === 'students' || currentView === 'profile' ? 'bg-emerald-600/90 text-white shadow-md shadow-emerald-900/20 border-emerald-500/50' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
@@ -206,14 +299,21 @@ const App: React.FC = () => {
           </div>
         </nav>
 
-        <div className="p-4 m-4 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm">
-            <div className="flex items-center gap-3">
+        {/* User Info & Logout */}
+        <div className="p-4 m-4 mt-0 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-400 flex items-center justify-center text-sm font-bold shadow-md">A</div>
                 <div className="overflow-hidden">
                     <p className="text-sm font-semibold text-white truncate">Administrator</p>
                     <p className="text-xs text-emerald-200 truncate opacity-80">admin@gpsbazar.edu</p>
                 </div>
             </div>
+            <button 
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/10 hover:bg-red-500/20 text-emerald-100 hover:text-red-200 transition-colors text-xs font-bold uppercase tracking-wider border border-white/5 hover:border-red-500/30"
+            >
+                <LogOut size={14} /> Log Out
+            </button>
         </div>
       </aside>
 
@@ -241,8 +341,15 @@ const App: React.FC = () => {
         </header>
 
         <div className="flex-1 overflow-y-auto scroll-smooth">
-            {currentView === 'dashboard' && <Dashboard students={students} />}
+            {currentView === 'dashboard' && <Dashboard students={students} session={session} />}
             
+            {currentView === 'attendance' && (
+                <AttendanceManager 
+                    students={students} 
+                    onUpdateBatch={handleBatchUpdateAttendance}
+                />
+            )}
+
             {currentView === 'students' && (
             <StudentList 
                 students={students}
@@ -260,6 +367,7 @@ const App: React.FC = () => {
                 initialTab={profileInitialTab}
                 onBack={() => setCurrentView('students')}
                 onUpdate={handleUpdateStudent}
+                session={session}
             />
             )}
         </div>

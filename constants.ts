@@ -31,6 +31,12 @@ export const INITIAL_STUDENTS: StudentRecord[] = [
         },
         remarks: 'Excellent performance.'
       }
+    },
+    attendance: {
+      '2024-03-01': 'P',
+      '2024-03-02': 'P',
+      '2024-03-03': 'A',
+      '2024-03-04': 'P'
     }
   },
   {
@@ -43,6 +49,7 @@ export const INITIAL_STUDENTS: StudentRecord[] = [
     formB: '12345-7654321-2',
     contact: '0333-9876543',
     grade: '4',
-    results: {}
+    results: {},
+    attendance: {}
   }
 ];

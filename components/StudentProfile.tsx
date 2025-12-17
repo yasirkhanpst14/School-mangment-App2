@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { StudentRecord, SUBJECTS, Subject, SemesterResult } from '../types';
 import { TOTAL_MARKS_PER_SUBJECT, SCHOOL_NAME } from '../constants';
-import { ArrowLeft, Save, Sparkles, Printer, FileText, User, Calendar, CreditCard, Phone, Hash, BookOpen, PenTool, Award, School } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, Printer, FileText, User, Calendar, CreditCard, Phone, Hash, BookOpen, PenTool, Award, School, CalendarCheck } from 'lucide-react';
 import { generateStudentReport } from '../services/geminiService';
 
 interface StudentProfileProps {
   student: StudentRecord;
   onBack: () => void;
   onUpdate: (updatedStudent: StudentRecord) => void;
-  initialTab?: 'profile' | 'sem1' | 'sem2' | 'dmc';
+  initialTab?: 'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance';
+  session: string;
 }
 
-export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack, onUpdate, initialTab = 'profile' }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc'>(initialTab);
+export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack, onUpdate, initialTab = 'profile', session }) => {
+  const [activeTab, setActiveTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance'>(initialTab);
   const [isEditingMarks, setIsEditingMarks] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -74,6 +75,74 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
     window.print();
   };
 
+  const renderAttendance = () => {
+    const records = student.attendance || {};
+    const dates = Object.keys(records).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    
+    const stats = Object.values(records).reduce<{ p: number; a: number; l: number }>((acc, curr) => {
+        if(curr === 'P') acc.p++;
+        if(curr === 'A') acc.a++;
+        if(curr === 'L') acc.l++;
+        return acc;
+    }, { p: 0, a: 0, l: 0 });
+
+    const total = dates.length;
+    const percentage = total > 0 ? Math.round((stats.p / total) * 100) : 0;
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
+            <div className="p-6 md:p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                 <div>
+                    <h3 className="text-xl font-bold text-slate-800">Attendance History</h3>
+                    <p className="text-sm text-slate-500 mt-1">{total} Total Records</p>
+                 </div>
+                 <div className="flex gap-4">
+                     <div className="text-center">
+                         <div className="text-2xl font-black text-emerald-600">{percentage}%</div>
+                         <div className="text-[10px] uppercase font-bold text-slate-400">Presence</div>
+                     </div>
+                 </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-1 p-4 bg-slate-50 border-b border-slate-200">
+                 <div className="bg-emerald-100/50 p-3 rounded-xl text-center border border-emerald-100">
+                     <div className="text-lg font-black text-emerald-800">{stats.p}</div>
+                     <div className="text-[10px] uppercase font-bold text-emerald-600">Present</div>
+                 </div>
+                 <div className="bg-red-100/50 p-3 rounded-xl text-center border border-red-100">
+                     <div className="text-lg font-black text-red-800">{stats.a}</div>
+                     <div className="text-[10px] uppercase font-bold text-red-600">Absent</div>
+                 </div>
+                 <div className="bg-amber-100/50 p-3 rounded-xl text-center border border-amber-100">
+                     <div className="text-lg font-black text-amber-800">{stats.l}</div>
+                     <div className="text-[10px] uppercase font-bold text-amber-600">Leave</div>
+                 </div>
+            </div>
+
+            <div className="max-h-[500px] overflow-y-auto p-4">
+                {dates.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {dates.map(date => (
+                            <div key={date} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white hover:border-slate-300 transition-colors">
+                                <div className="text-sm font-bold text-slate-700">{date}</div>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                                    records[date] === 'P' ? 'bg-emerald-100 text-emerald-700' :
+                                    records[date] === 'A' ? 'bg-red-100 text-red-700' :
+                                    'bg-amber-100 text-amber-700'
+                                }`}>
+                                    {records[date]}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-slate-400">No attendance records found.</div>
+                )}
+            </div>
+        </div>
+    );
+  };
+
   const renderDMC = () => {
     // Calculate Grand Totals based on available semesters
     const sem1 = student.results.sem1;
@@ -126,7 +195,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                     <h1 className="text-3xl font-black text-emerald-900 uppercase tracking-tight">{SCHOOL_NAME}</h1>
                     <p className="text-emerald-700 font-bold uppercase tracking-widest text-sm mt-1">Elementary & Secondary Education</p>
                     <h2 className="text-xl font-bold text-slate-800 mt-6 inline-block border-b border-slate-800 px-6 pb-1">DETAILED MARKS CERTIFICATE</h2>
-                    <p className="text-slate-500 text-sm mt-2 font-medium">Academic Session 2024-2025</p>
+                    <p className="text-slate-500 text-sm mt-2 font-medium">Academic Session {session}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8 text-sm font-medium">
@@ -309,7 +378,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
              </div>
              <div>
                 <h3 className="text-xl font-bold text-slate-800">Result Card - Semester {sem}</h3>
-                <p className="text-slate-500 text-sm mt-0.5">Academic Session 2024-2025</p>
+                <p className="text-slate-500 text-sm mt-0.5">Academic Session {session}</p>
              </div>
            </div>
            <div className="flex gap-2 no-print">
@@ -411,6 +480,12 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
           Profile Details
         </button>
         <button 
+          onClick={() => setActiveTab('attendance')}
+          className={`flex-1 min-w-[140px] px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'attendance' ? 'bg-white text-emerald-600 shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+        >
+          Attendance
+        </button>
+        <button 
           onClick={() => setActiveTab('sem1')}
           className={`flex-1 min-w-[140px] px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'sem1' ? 'bg-white text-emerald-600 shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
         >
@@ -492,6 +567,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
         </div>
       )}
 
+      {activeTab === 'attendance' && renderAttendance()}
       {activeTab === 'sem1' && renderResultView(1)}
       {activeTab === 'sem2' && renderResultView(2)}
       {activeTab === 'dmc' && renderDMC()}
