@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
 import { StudentProfile } from './components/StudentProfile';
 import { AttendanceManager } from './components/AttendanceManager';
 import { Login } from './components/Login';
-import { StudentRecord, SUBJECTS, Subject, AttendanceStatus } from './types';
-import { getStudents, saveStudents, exportToCSV } from './services/storageService';
+import { StudentRecord, SUBJECTS, AttendanceStatus } from './types';
+import { getStudents, saveStudent, removeStudent, exportToCSV } from './services/storageService';
 import { SCHOOL_NAME } from './constants';
 
-// Simple ID gen
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const App: React.FC = () => {
-  // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem('auth_session') === 'active';
   });
@@ -23,23 +21,24 @@ const App: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null);
   const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance'>('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Session State
   const [session, setSession] = useState<string>(() => {
     return localStorage.getItem('school_session') || '2024-2025';
   });
   const [isEditingSession, setIsEditingSession] = useState(false);
 
   useEffect(() => {
-    const loaded = getStudents();
-    setStudents(loaded);
-  }, []);
-
-  useEffect(() => {
-    if(students.length > 0) {
-        saveStudents(students);
-    }
-  }, [students]);
+    const loadData = async () => {
+      if (isAuthenticated) {
+        setIsLoading(true);
+        const loaded = await getStudents();
+        setStudents(loaded);
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [isAuthenticated]);
 
   useEffect(() => {
     localStorage.setItem('school_session', session);
@@ -56,22 +55,26 @@ const App: React.FC = () => {
     if(confirm("Are you sure you want to log out?")) {
         sessionStorage.removeItem('auth_session');
         setIsAuthenticated(false);
+        setStudents([]);
     }
   };
 
-  const handleAddStudent = (newStudentData: any) => {
+  const handleAddStudent = async (newStudentData: any) => {
+    const id = generateId();
     const newStudent: StudentRecord = {
-      id: generateId(),
+      id,
       ...newStudentData,
       results: {},
       attendance: {}
     };
     setStudents(prev => [...prev, newStudent]);
+    await saveStudent(newStudent);
   };
 
-  const handleDeleteStudent = (id: string) => {
+  const handleDeleteStudent = async (id: string) => {
     if (confirm('Are you sure you want to delete this student?')) {
       setStudents(prev => prev.filter(s => s.id !== id));
+      await removeStudent(id);
       if (selectedStudent?.id === id) {
         setSelectedStudent(null);
         setCurrentView('students');
@@ -86,34 +89,34 @@ const App: React.FC = () => {
     setIsSidebarOpen(false);
   };
 
-  const handleUpdateStudent = (updated: StudentRecord) => {
+  const handleUpdateStudent = async (updated: StudentRecord) => {
     setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
     setSelectedStudent(updated);
+    await saveStudent(updated);
   };
 
-  const handleBatchUpdateAttendance = (updates: { studentId: string; date: string; status: AttendanceStatus }[]) => {
-    setStudents(prev => {
-        const newStudents = [...prev];
-        updates.forEach(({ studentId, date, status }) => {
-            const idx = newStudents.findIndex(s => s.id === studentId);
-            if (idx !== -1) {
-                const student = newStudents[idx];
-                newStudents[idx] = {
-                    ...student,
-                    attendance: {
-                        ...student.attendance,
-                        [date]: status
-                    }
-                };
-            }
-        });
-        return newStudents;
-    });
+  const handleBatchUpdateAttendance = async (updates: { studentId: string; date: string; status: AttendanceStatus }[]) => {
+    const updatedStudents = [...students];
+    for (const update of updates) {
+      const idx = updatedStudents.findIndex(s => s.id === update.studentId);
+      if (idx !== -1) {
+        const student = {
+          ...updatedStudents[idx],
+          attendance: {
+            ...updatedStudents[idx].attendance,
+            [update.date]: update.status
+          }
+        };
+        updatedStudents[idx] = student;
+        await saveStudent(student);
+      }
+    }
+    setStudents(updatedStudents);
   };
 
-  const handleImport = (file: File) => {
+  const handleImport = async (file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const text = e.target?.result as string;
       const rows = text.split('\n');
       const header = rows[0].split(',').map(h => h.trim());
@@ -123,29 +126,25 @@ const App: React.FC = () => {
       let updatedCount = 0;
       let addedCount = 0;
 
-      // Identify column indices
       const idxSerial = header.indexOf('SerialNo');
       const idxReg = header.indexOf('RegistrationNo');
       
-      dataRows.forEach(row => {
+      for (const row of dataRows) {
         const cols = row.split(',');
-        if (cols.length < 5) return; // Skip invalid rows
+        if (cols.length < 5) continue;
 
         const clean = (s: string) => s?.replace(/"/g, '').trim();
         const regNo = clean(cols[idxReg]);
         const serialNo = clean(cols[idxSerial]);
         
-        // Find existing student
         let studentIndex = -1;
         if (regNo) studentIndex = newStudents.findIndex(s => s.registrationNo === regNo);
         if (studentIndex === -1 && serialNo) studentIndex = newStudents.findIndex(s => s.serialNo === serialNo);
 
         if (studentIndex !== -1) {
-          // UPDATE EXISTING STUDENT (Bulk Marks Upload)
           const student = newStudents[studentIndex];
           const results = { ...student.results };
 
-          // Parse Marks
           SUBJECTS.forEach(subj => {
              const sem1Idx = header.indexOf(`Sem1_${subj}`);
              const sem2Idx = header.indexOf(`Sem2_${subj}`);
@@ -160,10 +159,11 @@ const App: React.FC = () => {
              }
           });
           
-          newStudents[studentIndex] = { ...student, results };
+          const updatedStudent = { ...student, results };
+          newStudents[studentIndex] = updatedStudent;
+          await saveStudent(updatedStudent);
           updatedCount++;
         } else {
-          // ADD NEW STUDENT
           const idxName = header.indexOf('Name');
           const idxFather = header.indexOf('FatherName');
           const idxGrade = header.indexOf('Grade');
@@ -172,7 +172,7 @@ const App: React.FC = () => {
           const idxContact = header.indexOf('Contact');
 
           if (idxName !== -1) {
-              newStudents.push({
+              const freshStudent: StudentRecord = {
                 id: generateId(),
                 serialNo: serialNo,
                 registrationNo: regNo,
@@ -184,11 +184,13 @@ const App: React.FC = () => {
                 contact: idxContact !== -1 ? clean(cols[idxContact]) : '',
                 results: {},
                 attendance: {}
-              });
+              };
+              newStudents.push(freshStudent);
+              await saveStudent(freshStudent);
               addedCount++;
           }
         }
-      });
+      }
 
       setStudents(newStudents);
       alert(`Import Complete!\nAdded: ${addedCount}\nUpdated (Marks): ${updatedCount}`);
@@ -201,15 +203,12 @@ const App: React.FC = () => {
     setIsSidebarOpen(false);
   };
 
-  // Guard Clause for Authentication
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
-      
-      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/60 z-30 lg:hidden backdrop-blur-sm transition-opacity"
@@ -217,7 +216,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Sidebar - Updated to KPK Green Theme */}
       <aside className={`
         fixed inset-y-0 left-0 z-40 w-72 bg-gradient-to-b from-emerald-900 to-emerald-800 text-white flex flex-col shadow-2xl transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:inset-0 lg:shadow-none lg:w-72 no-print
@@ -238,7 +236,6 @@ const App: React.FC = () => {
             </button>
         </div>
         
-        {/* Session Manager */}
         <div className="px-4 py-4 border-b border-white/10">
           <div className="bg-black/20 rounded-xl p-3 border border-white/5">
             <div className="flex items-center justify-between mb-1">
@@ -299,7 +296,6 @@ const App: React.FC = () => {
           </div>
         </nav>
 
-        {/* User Info & Logout */}
         <div className="p-4 m-4 mt-0 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-400 flex items-center justify-center text-sm font-bold shadow-md">A</div>
@@ -317,7 +313,6 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-slate-50">
         <header className="bg-emerald-50 shadow-sm border-b border-emerald-100 h-16 flex items-center px-4 md:px-8 justify-between shrink-0 no-print z-10 sticky top-0">
             <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
@@ -341,34 +336,35 @@ const App: React.FC = () => {
         </header>
 
         <div className="flex-1 overflow-y-auto scroll-smooth">
-            {currentView === 'dashboard' && <Dashboard students={students} session={session} />}
-            
-            {currentView === 'attendance' && (
-                <AttendanceManager 
-                    students={students} 
-                    onUpdateBatch={handleBatchUpdateAttendance}
-                />
-            )}
-
-            {currentView === 'students' && (
-            <StudentList 
-                students={students}
-                onAddStudent={handleAddStudent}
-                onDeleteStudent={handleDeleteStudent}
-                onSelectStudent={handleViewProfile}
-                onExport={() => exportToCSV(students)}
-                onImport={handleImport}
-            />
-            )}
-
-            {currentView === 'profile' && selectedStudent && (
-            <StudentProfile 
-                student={selectedStudent}
-                initialTab={profileInitialTab}
-                onBack={() => setCurrentView('students')}
-                onUpdate={handleUpdateStudent}
-                session={session}
-            />
+            {isLoading ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
+                 <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                 <p className="font-bold text-sm">Syncing with Cloud Database...</p>
+              </div>
+            ) : (
+              <>
+                {currentView === 'dashboard' && <Dashboard students={students} session={session} />}
+                {currentView === 'attendance' && <AttendanceManager students={students} onUpdateBatch={handleBatchUpdateAttendance} />}
+                {currentView === 'students' && (
+                  <StudentList 
+                      students={students}
+                      onAddStudent={handleAddStudent}
+                      onDeleteStudent={handleDeleteStudent}
+                      onSelectStudent={handleViewProfile}
+                      onExport={() => exportToCSV(students)}
+                      onImport={handleImport}
+                  />
+                )}
+                {currentView === 'profile' && selectedStudent && (
+                  <StudentProfile 
+                      student={selectedStudent}
+                      initialTab={profileInitialTab}
+                      onBack={() => setCurrentView('students')}
+                      onUpdate={handleUpdateStudent}
+                      session={session}
+                  />
+                )}
+              </>
             )}
         </div>
       </main>

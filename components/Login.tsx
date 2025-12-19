@@ -16,49 +16,49 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const creds = getAdminCredentials();
-    if (!creds) {
-      setIsSignUp(true);
-    }
+    const checkStatus = async () => {
+      setIsLoading(true);
+      const creds = await getAdminCredentials();
+      if (!creds) {
+        setIsSignUp(true);
+      }
+      setIsLoading(false);
+    };
+    checkStatus();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (isSignUp) {
-        // Handle Registration
-        if (password.length < 4) {
-             setError('Password must be at least 4 characters long.');
-             setIsLoading(false);
-             return;
-        }
-        if (password !== confirmPassword) {
-            setError('Passwords do not match.');
-            setIsLoading(false);
-            return;
-        }
-        
-        saveAdminCredentials({ username, password });
-        onLogin(true);
-      } else {
-        // Handle Login
-        const creds = getAdminCredentials();
-        if (creds && username.toLowerCase() === creds.username.toLowerCase() && password === creds.password) {
-            onLogin(true);
-        } else {
-            setError('Invalid credentials. Please try again.');
-            setIsLoading(false);
-        }
+    if (isSignUp) {
+      if (password.length < 4) {
+           setError('Password must be at least 4 characters long.');
+           setIsLoading(false);
+           return;
       }
-    }, 800);
+      if (password !== confirmPassword) {
+          setError('Passwords do not match.');
+          setIsLoading(false);
+          return;
+      }
+      
+      await saveAdminCredentials({ username, password });
+      onLogin(true);
+    } else {
+      const creds = await getAdminCredentials();
+      if (creds && username.toLowerCase() === creds.username.toLowerCase() && password === creds.password) {
+          onLogin(true);
+      } else {
+          setError('Invalid credentials. Please try again.');
+          setIsLoading(false);
+      }
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-emerald-200/20 blur-3xl animate-pulse"></div>
         <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-teal-200/20 blur-3xl"></div>
@@ -151,7 +151,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center justify-center gap-4">
           <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
             <ShieldCheck size={14} className="text-emerald-500" />
-            <span>Secured by Admin Protocol</span>
+            <span>Secured by Firebase Admin</span>
           </div>
           
           {!isSignUp ? (
@@ -163,10 +163,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </button>
           ) : (
              <button 
-                onClick={() => {
-                    if(getAdminCredentials()) setIsSignUp(false);
+                onClick={async () => {
+                    const creds = await getAdminCredentials();
+                    if(creds) setIsSignUp(false);
                 }} 
-                className={`text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 ${!getAdminCredentials() ? 'hidden' : ''}`}
+                className={`text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 opacity-80 hover:opacity-100`}
             >
                 Back to Sign In
             </button>

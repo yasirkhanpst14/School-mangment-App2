@@ -1,33 +1,56 @@
+import { collection, getDocs, setDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
+import { db } from "./firebase";
 import { StudentRecord, SUBJECTS } from "../types";
-import { INITIAL_STUDENTS } from "../constants";
 
-const STORAGE_KEY = 'school_manager_data_v3'; 
-const AUTH_KEY = 'school_manager_auth_v1';
+const STUDENTS_COLLECTION = 'students';
+const AUTH_COLLECTION = 'admin';
+const AUTH_DOC_ID = 'credentials';
 
-export const getStudents = (): StudentRecord[] => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (data) {
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      console.error("Failed to parse storage", e);
-      return INITIAL_STUDENTS;
-    }
+export const getStudents = async (): Promise<StudentRecord[]> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, STUDENTS_COLLECTION));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentRecord));
+  } catch (error) {
+    console.error("Error fetching students: ", error);
+    return [];
   }
-  return INITIAL_STUDENTS;
 };
 
-export const saveStudents = (students: StudentRecord[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+export const saveStudent = async (student: StudentRecord) => {
+  try {
+    await setDoc(doc(db, STUDENTS_COLLECTION, student.id), student);
+  } catch (error) {
+    console.error("Error saving student: ", error);
+  }
 };
 
-export const getAdminCredentials = () => {
-  const data = localStorage.getItem(AUTH_KEY);
-  return data ? JSON.parse(data) : null;
+export const removeStudent = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, STUDENTS_COLLECTION, id));
+  } catch (error) {
+    console.error("Error deleting student: ", error);
+  }
 };
 
-export const saveAdminCredentials = (creds: {username: string, password: string}) => {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(creds));
+export const getAdminCredentials = async () => {
+  try {
+    const docSnap = await getDoc(doc(db, AUTH_COLLECTION, AUTH_DOC_ID));
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching admin credentials: ", error);
+    return null;
+  }
+};
+
+export const saveAdminCredentials = async (creds: {username: string, password: string}) => {
+  try {
+    await setDoc(doc(db, AUTH_COLLECTION, AUTH_DOC_ID), creds);
+  } catch (error) {
+    console.error("Error saving admin credentials: ", error);
+  }
 };
 
 export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
@@ -35,7 +58,6 @@ export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
     let sampleRow: string[] = [];
     let filename = '';
 
-    // Common columns used for matching
     const idCols = ['SerialNo', 'RegistrationNo'];
     const idSample = ['101', 'R-2024-001'];
 
@@ -46,7 +68,6 @@ export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
     } else if (type === 'sem1') {
         const subHeaders = SUBJECTS.map(s => `Sem1_${s}`);
         headers = [...idCols, 'Name', ...subHeaders];
-        // Note: Name is included for reference to help the teacher, though not strictly needed for logic if RegNo exists
         sampleRow = [...idSample, 'Ali Khan (Ref Only)', ...SUBJECTS.map(() => '')];
         filename = 'Template_Semester_1_Marks.csv';
     } else if (type === 'sem2') {
@@ -69,7 +90,6 @@ export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
 };
 
 export const exportToCSV = (students: StudentRecord[]) => {
-  // Generate dynamic headers for subjects
   const sem1Headers = SUBJECTS.map(s => `Sem1_${s}`);
   const sem2Headers = SUBJECTS.map(s => `Sem2_${s}`);
 
@@ -80,7 +100,6 @@ export const exportToCSV = (students: StudentRecord[]) => {
   ];
   
   const rows = students.map(s => {
-    // Helper to get mark or empty string
     const getMark = (sem: 1 | 2, subj: string) => {
       const res = sem === 1 ? s.results.sem1 : s.results.sem2;
       return res?.marks?.[subj as any] ?? '';
