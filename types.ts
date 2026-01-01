@@ -64,3 +64,8 @@ export interface DashboardStats {
   totalStudents: number;
   gradeDistribution: { name: string; value: number }[];
 }
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}

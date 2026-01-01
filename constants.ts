@@ -1,6 +1,6 @@
 import { StudentRecord } from "./types";
 
-export const SCHOOL_NAME = "GPS No 1 Bazar";
+export const SCHOOL_NAME = "GPS Bazar No 1";
 
 export const TOTAL_MARKS_PER_SUBJECT = 100;
 
@@ -38,18 +38,5 @@ export const INITIAL_STUDENTS: StudentRecord[] = [
       '2024-03-03': 'A',
       '2024-03-04': 'P'
     }
-  },
-  {
-    id: '2',
-    serialNo: '102',
-    registrationNo: 'R-2024-002',
-    name: 'Fatima Ali',
-    fatherName: 'Zafar Ali',
-    dob: '2016-08-20',
-    formB: '12345-7654321-2',
-    contact: '0333-9876543',
-    grade: '4',
-    results: {},
-    attendance: {}
   }
 ];

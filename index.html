@@ -22,6 +22,19 @@
         }
         body {
           background-color: white;
+          margin: 0;
+          padding: 0;
+        }
+        #dmc-print-area {
+          width: 100% !important;
+          max-width: none !important;
+          border-width: 2px !important;
+          transform: scale(0.95);
+          transform-origin: top center;
+        }
+        @page {
+          size: auto;
+          margin: 10mm;
         }
       }
       /* Custom Scrollbar */

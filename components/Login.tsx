@@ -58,49 +58,51 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-emerald-200/20 blur-3xl animate-pulse"></div>
-        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-teal-200/20 blur-3xl"></div>
+        <div className="absolute -top-[10%] -left-[5%] w-[60%] h-[60%] rounded-full bg-emerald-900/10 blur-3xl"></div>
+        <div className="absolute bottom-[0%] right-[0%] w-[40%] h-[40%] rounded-full bg-amber-500/5 blur-3xl"></div>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl w-full max-w-md rounded-3xl shadow-2xl border border-white/50 p-8 md:p-10 relative z-10 animate-in fade-in zoom-in-95 duration-500">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-emerald-100 p-8 md:p-10 relative z-10 animate-in fade-in zoom-in-95 duration-500">
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-600/30">
-            <School size={40} className="text-white" />
+          <div className="w-20 h-20 bg-emerald-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-900/20 border-2 border-amber-400">
+            <School size={40} className="text-amber-400" />
           </div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">{SCHOOL_NAME}</h1>
-          <p className="text-slate-500 font-medium mt-2 text-sm">
-            {isSignUp ? "Create Admin Account" : "Secure School Management System"}
+          <h1 className="text-3xl font-black text-emerald-950 tracking-tight">{SCHOOL_NAME}</h1>
+          <div className="h-1 w-16 bg-amber-500 mx-auto mt-2 rounded-full"></div>
+          <p className="text-slate-500 font-bold mt-4 text-xs uppercase tracking-widest">
+            {isSignUp ? "Admin Registration Portal" : "School Management System"}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Username</label>
+            <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1">Admin Username</label>
             <div className="relative group">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-700 transition-colors" size={18} />
               <input 
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-700 placeholder-slate-400"
-                placeholder={isSignUp ? "Choose a username" : "Enter username"}
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800 outline-none transition-all font-bold text-slate-700 placeholder-slate-400"
+                placeholder={isSignUp ? "Set Admin Username" : "Username"}
                 required
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Password</label>
+            <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1">Access Password</label>
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-700 transition-colors" size={18} />
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-700 placeholder-slate-400"
-                placeholder={isSignUp ? "Create a password" : "Enter password"}
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800 outline-none transition-all font-bold text-slate-700 placeholder-slate-400"
+                placeholder={isSignUp ? "Set Password" : "Password"}
                 required
               />
             </div>
@@ -108,14 +110,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           {isSignUp && (
              <div className="space-y-1.5 animate-in slide-in-from-top-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Confirm Password</label>
+                <label className="text-[10px] font-black text-emerald-800 uppercase tracking-widest ml-1">Confirm Password</label>
                 <div className="relative group">
-                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
+                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-700 transition-colors" size={18} />
                 <input 
                     type="password" 
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-700 placeholder-slate-400"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800 outline-none transition-all font-bold text-slate-700 placeholder-slate-400"
                     placeholder="Repeat password"
                     required
                 />
@@ -124,7 +126,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-bold text-center animate-in slide-in-from-top-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[11px] font-bold text-center animate-in slide-in-from-top-2">
               {error}
             </div>
           )}
@@ -132,16 +134,16 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-emerald-600/30 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-emerald-900 hover:bg-emerald-950 text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-900/30 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed border-b-4 border-emerald-950"
           >
             {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (
                 <>
                   {isSignUp ? (
-                    <>Create Account <UserPlus size={18} /></>
+                    <>Register Account <UserPlus size={18} /></>
                   ) : (
-                    <>Sign In Dashboard <ArrowRight size={18} /></>
+                    <>Login to Dashboard <ArrowRight size={18} /></>
                   )}
                 </>
             )}
@@ -149,29 +151,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </form>
 
         <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center justify-center gap-4">
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-            <ShieldCheck size={14} className="text-emerald-500" />
-            <span>Secured by Firebase Admin</span>
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-black uppercase tracking-widest">
+            <ShieldCheck size={14} className="text-amber-500" />
+            <span>Secure System Access</span>
           </div>
           
-          {!isSignUp ? (
-            <button 
-                onClick={() => setIsSignUp(true)} 
-                className="text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 opacity-80 hover:opacity-100"
+          <button 
+                onClick={() => setIsSignUp(!isSignUp)} 
+                className="text-xs text-emerald-800 font-black hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 uppercase tracking-tight"
             >
-                <RefreshCw size={12} /> Reset / Create New Account
-            </button>
-          ) : (
-             <button 
-                onClick={async () => {
-                    const creds = await getAdminCredentials();
-                    if(creds) setIsSignUp(false);
-                }} 
-                className={`text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 opacity-80 hover:opacity-100`}
-            >
-                Back to Sign In
-            </button>
-          )}
+                {isSignUp ? "Already have an account? Sign In" : <><RefreshCw size={12} /> Reset / Create Account</>}
+          </button>
         </div>
       </div>
     </div>

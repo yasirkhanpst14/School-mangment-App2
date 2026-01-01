@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut, UserCircle } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
 import { StudentProfile } from './components/StudentProfile';
 import { AttendanceManager } from './components/AttendanceManager';
 import { Login } from './components/Login';
+import { Chatbot } from './components/Chatbot';
 import { StudentRecord, SUBJECTS, AttendanceStatus } from './types';
 import { getStudents, saveStudent, removeStudent, exportToCSV } from './services/storageService';
 import { SCHOOL_NAME } from './constants';
@@ -72,7 +73,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (confirm('Are you sure you want to delete this student?')) {
+    if (confirm('Are you sure you want to delete this student record?')) {
       setStudents(prev => prev.filter(s => s.id !== id));
       await removeStudent(id);
       if (selectedStudent?.id === id) {
@@ -208,7 +209,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-100 text-slate-900 font-sans overflow-hidden">
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/60 z-30 lg:hidden backdrop-blur-sm transition-opacity"
@@ -217,18 +218,18 @@ const App: React.FC = () => {
       )}
 
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-72 bg-gradient-to-b from-emerald-900 to-emerald-800 text-white flex flex-col shadow-2xl transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-40 w-72 bg-gradient-to-b from-emerald-950 to-emerald-900 text-white flex flex-col shadow-2xl transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:inset-0 lg:shadow-none lg:w-72 no-print
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                    <School size={24} className="text-white" />
+                <div className="w-10 h-10 bg-white/10 border border-amber-400/50 rounded-xl flex items-center justify-center shadow-lg">
+                    <School size={24} className="text-amber-400" />
                 </div>
                 <div>
-                    <h1 className="text-lg font-bold tracking-tight text-white leading-tight">GPS No 1</h1>
-                    <p className="text-xs text-emerald-200 font-medium">Bazar Campus</p>
+                    <h1 className="text-lg font-black tracking-tight text-white leading-tight uppercase">{SCHOOL_NAME}</h1>
+                    <p className="text-[10px] text-amber-200 font-black uppercase tracking-widest opacity-80">School Management</p>
                 </div>
             </div>
             <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-emerald-100 hover:text-white transition-colors bg-white/5 p-1.5 rounded-lg">
@@ -237,10 +238,10 @@ const App: React.FC = () => {
         </div>
         
         <div className="px-4 py-4 border-b border-white/10">
-          <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+          <div className="bg-black/20 rounded-2xl p-4 border border-white/5 shadow-inner">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-emerald-300 font-bold uppercase tracking-wider flex items-center gap-1">
-                 <CalendarRange size={12} /> Session
+              <span className="text-[10px] text-amber-300 font-black uppercase tracking-widest flex items-center gap-1.5">
+                 <CalendarRange size={12} /> Academic Year
               </span>
               <button onClick={() => setIsEditingSession(!isEditingSession)} className="text-emerald-200 hover:text-white transition-colors">
                  <PenLine size={12} />
@@ -253,11 +254,11 @@ const App: React.FC = () => {
                 onChange={(e) => setSession(e.target.value)}
                 onBlur={() => setIsEditingSession(false)}
                 onKeyDown={(e) => e.key === 'Enter' && setIsEditingSession(false)}
-                className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-emerald-400"
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400"
                 autoFocus
               />
             ) : (
-              <div className="font-mono text-lg font-bold text-white tracking-wide">{session}</div>
+              <div className="font-black text-xl text-white tracking-widest">{session}</div>
             )}
           </div>
         </div>
@@ -265,84 +266,84 @@ const App: React.FC = () => {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           <button 
             onClick={() => navigateTo('dashboard')}
-            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group border border-transparent ${currentView === 'dashboard' ? 'bg-emerald-600/90 text-white shadow-md shadow-emerald-900/20 border-emerald-500/50' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
+            className={`w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-200 group border border-transparent ${currentView === 'dashboard' ? 'bg-amber-500 text-emerald-950 shadow-lg shadow-amber-500/20' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
           >
-            <LayoutDashboard size={20} className={currentView === 'dashboard' ? 'text-white' : 'text-emerald-200 group-hover:text-white'} />
-            <span className="font-medium">Dashboard</span>
+            <LayoutDashboard size={20} className={currentView === 'dashboard' ? 'text-emerald-950' : 'text-amber-400 group-hover:text-white'} />
+            <span className="font-black text-xs uppercase tracking-widest">Dashboard</span>
           </button>
           
           <button 
             onClick={() => navigateTo('attendance')}
-            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group border border-transparent ${currentView === 'attendance' ? 'bg-emerald-600/90 text-white shadow-md shadow-emerald-900/20 border-emerald-500/50' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
+            className={`w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-200 group border border-transparent ${currentView === 'attendance' ? 'bg-amber-500 text-emerald-950 shadow-lg shadow-amber-500/20' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
           >
-            <CalendarCheck size={20} className={currentView === 'attendance' ? 'text-white' : 'text-emerald-200 group-hover:text-white'} />
-            <span className="font-medium">Attendance</span>
+            <CalendarCheck size={20} className={currentView === 'attendance' ? 'text-emerald-950' : 'text-amber-400 group-hover:text-white'} />
+            <span className="font-black text-xs uppercase tracking-widest">Attendance</span>
           </button>
 
           <button 
             onClick={() => navigateTo('students')}
-            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group border border-transparent ${currentView === 'students' || currentView === 'profile' ? 'bg-emerald-600/90 text-white shadow-md shadow-emerald-900/20 border-emerald-500/50' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
+            className={`w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-200 group border border-transparent ${currentView === 'students' || currentView === 'profile' ? 'bg-amber-500 text-emerald-950 shadow-lg shadow-amber-500/20' : 'text-emerald-100/70 hover:bg-white/5 hover:text-white'}`}
           >
-            <GraduationCap size={20} className={currentView === 'students' || currentView === 'profile' ? 'text-white' : 'text-emerald-200 group-hover:text-white'} />
-            <span className="font-medium">Students & Marks</span>
+            <UserCircle size={20} className={currentView === 'students' || currentView === 'profile' ? 'text-emerald-950' : 'text-amber-400 group-hover:text-white'} />
+            <span className="font-black text-xs uppercase tracking-widest">Students Profile</span>
           </button>
 
           <div className="pt-6 mt-2">
-             <div className="px-4 py-2 text-xs uppercase text-emerald-300/60 font-bold tracking-wider mb-1">Analytics</div>
-             <button className="w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-emerald-100/40 hover:bg-white/5 hover:text-white transition-all cursor-not-allowed opacity-60">
+             <div className="px-5 py-2 text-[10px] uppercase text-amber-300/60 font-black tracking-widest mb-1">Reports</div>
+             <button className="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl text-emerald-100/40 hover:bg-white/5 hover:text-white transition-all cursor-not-allowed opacity-60">
                 <FileBarChart size={20} />
-                <span>Reports (Beta)</span>
+                <span className="font-black text-xs uppercase tracking-widest">Examination</span>
              </button>
           </div>
         </nav>
 
-        <div className="p-4 m-4 mt-0 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm">
+        <div className="p-4 m-4 mt-0 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-400 flex items-center justify-center text-sm font-bold shadow-md">A</div>
+                <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center text-emerald-950 text-sm font-black shadow-md border border-white/20">A</div>
                 <div className="overflow-hidden">
-                    <p className="text-sm font-semibold text-white truncate">Administrator</p>
-                    <p className="text-xs text-emerald-200 truncate opacity-80">admin@gpsbazar.edu</p>
+                    <p className="text-[11px] font-black text-white truncate uppercase tracking-tight">Admin</p>
+                    <p className="text-[9px] text-amber-200 truncate opacity-80 uppercase tracking-widest">System Manager</p>
                 </div>
             </div>
             <button 
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/10 hover:bg-red-500/20 text-emerald-100 hover:text-red-200 transition-colors text-xs font-bold uppercase tracking-wider border border-white/5 hover:border-red-500/30"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-emerald-100 hover:text-red-200 transition-colors text-[10px] font-black uppercase tracking-widest border border-white/5 hover:border-red-500/30"
             >
                 <LogOut size={14} /> Log Out
             </button>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-slate-50">
-        <header className="bg-emerald-50 shadow-sm border-b border-emerald-100 h-16 flex items-center px-4 md:px-8 justify-between shrink-0 no-print z-10 sticky top-0">
+      <main className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-slate-100">
+        <header className="bg-white shadow-md border-b-4 border-amber-400 h-16 flex items-center px-4 md:px-8 justify-between shrink-0 no-print z-10 sticky top-0">
             <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                 <button 
                     onClick={() => setIsSidebarOpen(true)} 
-                    className="lg:hidden p-2 -ml-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100 rounded-lg transition-colors"
+                    className="lg:hidden p-2 -ml-2 text-emerald-900 hover:text-emerald-950 hover:bg-emerald-50 rounded-xl transition-colors"
                 >
                     <Menu size={24} />
                 </button>
-                <div className="h-6 w-px bg-emerald-200 hidden lg:block"></div>
-                <h2 className="text-lg md:text-xl font-bold text-emerald-900 capitalize truncate tracking-tight">
+                <div className="h-6 w-px bg-slate-200 hidden lg:block"></div>
+                <h2 className="text-base md:text-lg font-black text-emerald-950 uppercase truncate tracking-tight">
                     {currentView === 'profile' ? 'Student Profile' : currentView}
                 </h2>
             </div>
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                <span className="hidden md:inline-flex text-xs font-semibold text-emerald-800 bg-white px-2.5 py-1 rounded-full border border-emerald-200 items-center shadow-sm">
-                    <School size={12} className="mr-1.5 text-emerald-600" />
+                <span className="hidden md:inline-flex text-[10px] font-black text-emerald-900 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 items-center shadow-sm uppercase tracking-widest">
+                    <School size={14} className="mr-2 text-amber-500" />
                     {SCHOOL_NAME}
                 </span>
             </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto scroll-smooth">
+        <div className="flex-1 overflow-y-auto scroll-smooth custom-scrollbar">
             {isLoading ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
-                 <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-                 <p className="font-bold text-sm">Syncing with Cloud Database...</p>
+                 <div className="w-14 h-14 border-4 border-emerald-100 border-t-emerald-900 rounded-full animate-spin"></div>
+                 <p className="font-black text-[10px] uppercase tracking-widest text-emerald-900/60">Syncing Database...</p>
               </div>
             ) : (
-              <>
+              <div className="p-0 animate-in fade-in duration-700">
                 {currentView === 'dashboard' && <Dashboard students={students} session={session} />}
                 {currentView === 'attendance' && <AttendanceManager students={students} onUpdateBatch={handleBatchUpdateAttendance} />}
                 {currentView === 'students' && (
@@ -364,9 +365,12 @@ const App: React.FC = () => {
                       session={session}
                   />
                 )}
-              </>
+              </div>
             )}
         </div>
+        
+        {/* Persistent Chatbot Overlay */}
+        <Chatbot students={students} />
       </main>
     </div>
   );
