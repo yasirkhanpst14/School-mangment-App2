@@ -6,6 +6,10 @@ const STUDENTS_COLLECTION = 'students';
 const AUTH_COLLECTION = 'admin';
 const AUTH_DOC_ID = 'credentials';
 
+// UTF-8 BOM for Excel compatibility (crucial for older versions to detect encoding correctly)
+const BOM = '\ufeff';
+const CRLF = '\r\n';
+
 export const getStudents = async (): Promise<StudentRecord[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, STUDENTS_COLLECTION));
@@ -53,32 +57,41 @@ export const saveAdminCredentials = async (creds: {username: string, password: s
   }
 };
 
+const escapeCSV = (val: any) => {
+  const str = String(val === null || val === undefined ? '' : val);
+  return `"${str.replace(/"/g, '""')}"`;
+};
+
 export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
     let headers: string[] = [];
     let sampleRow: string[] = [];
     let filename = '';
 
     const idCols = ['SerialNo', 'RegistrationNo'];
-    const idSample = ['101', 'R-2024-001'];
+    const idSample = ['101', 'R-2025-001'];
 
     if (type === 'bio') {
-        headers = [...idCols, 'Name', 'FatherName', 'Grade', 'DOB', 'FormB', 'Contact'];
-        sampleRow = [...idSample, 'Ali Khan', 'Zafar Khan', '1', '2016-01-01', '12345-1234567-1', '0300-1234567'];
-        filename = 'Template_New_Admissions.csv';
+        headers = [...idCols, 'Name', 'FatherName', 'Gender', 'Grade', 'DOB', 'FormB', 'Contact'];
+        sampleRow = [...idSample, 'Ali Khan', 'Zafar Khan', 'Male', '1', '2016-01-01', '12345-1234567-1', '0300-1234567'];
+        filename = 'Template_Student_Registration.csv';
     } else if (type === 'sem1') {
         const subHeaders = SUBJECTS.map(s => `Sem1_${s}`);
         headers = [...idCols, 'Name', ...subHeaders];
-        sampleRow = [...idSample, 'Ali Khan (Ref Only)', ...SUBJECTS.map(() => '')];
-        filename = 'Template_Semester_1_Marks.csv';
+        sampleRow = [...idSample, 'Ali Khan', ...SUBJECTS.map(() => '0')];
+        filename = 'Template_Marks_Sem1.csv';
     } else if (type === 'sem2') {
         const subHeaders = SUBJECTS.map(s => `Sem2_${s}`);
         headers = [...idCols, 'Name', ...subHeaders];
-        sampleRow = [...idSample, 'Ali Khan (Ref Only)', ...SUBJECTS.map(() => '')];
-        filename = 'Template_Semester_2_Marks.csv';
+        sampleRow = [...idSample, 'Ali Khan', ...SUBJECTS.map(() => '0')];
+        filename = 'Template_Marks_Sem2.csv';
     }
 
-    const csvContent = [headers.join(','), sampleRow.join(',')].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csvContent = [
+      headers.map(escapeCSV).join(','), 
+      sampleRow.map(escapeCSV).join(',')
+    ].join(CRLF);
+    
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
@@ -94,7 +107,7 @@ export const exportToCSV = (students: StudentRecord[]) => {
   const sem2Headers = SUBJECTS.map(s => `Sem2_${s}`);
 
   const headers = [
-    'SerialNo', 'RegistrationNo', 'Name', 'FatherName', 'Grade', 'DOB', 'FormB', 'Contact',
+    'SerialNo', 'RegistrationNo', 'Name', 'FatherName', 'Gender', 'Grade', 'DOB', 'FormB', 'Contact',
     ...sem1Headers,
     ...sem2Headers
   ];
@@ -111,23 +124,28 @@ export const exportToCSV = (students: StudentRecord[]) => {
     return [
       s.serialNo,
       s.registrationNo || '',
-      `"${s.name}"`,
-      `"${s.fatherName}"`,
+      s.name,
+      s.fatherName,
+      s.gender,
       s.grade,
       s.dob,
       s.formB,
       s.contact,
       ...sem1Values,
       ...sem2Values
-    ].join(',');
+    ].map(escapeCSV).join(',');
   });
 
-  const csvContent = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const csvContent = [
+    headers.map(escapeCSV).join(','), 
+    ...rows
+  ].join(CRLF);
+  
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `GPS_No1_Bazar_Full_Data_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `Full_Data_Backup_${new Date().toISOString().split('T')[0]}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();

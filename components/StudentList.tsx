@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StudentRecord, GRADES, Grade, SUBJECTS } from '../types';
+import { StudentRecord, GRADES, Grade, SUBJECTS, Gender } from '../types';
 import { Plus, Search, FileDown, Upload, Trash2, Edit, Hash, Users, Phone, Filter, PenTool, ClipboardList, FileSpreadsheet, Info, ChevronDown, User, CheckCircle2, FileUp, AlertCircle, FileText } from 'lucide-react';
 import { SCHOOL_NAME } from '../constants';
 import { downloadCSVTemplate } from '../services/storageService';
@@ -10,7 +10,7 @@ interface StudentListProps {
   onDeleteStudent: (id: string) => void;
   onSelectStudent: (s: StudentRecord, tab?: 'profile' | 'sem1' | 'sem2') => void;
   onExport: () => void;
-  onImport: (file: File) => void;
+  onImport: (files: File[]) => void;
 }
 
 export const StudentList: React.FC<StudentListProps> = ({ 
@@ -23,7 +23,7 @@ export const StudentList: React.FC<StudentListProps> = ({
   const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
   const templateMenuRef = useRef<HTMLDivElement>(null);
   
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -40,6 +40,7 @@ export const StudentList: React.FC<StudentListProps> = ({
     registrationNo: '',
     name: '',
     fatherName: '',
+    gender: 'Male' as Gender,
     dob: '',
     formB: '',
     contact: '',
@@ -55,16 +56,16 @@ export const StudentList: React.FC<StudentListProps> = ({
   });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files));
     }
   };
 
   const handleImportSubmit = () => {
-    if (selectedFile) {
-      onImport(selectedFile);
+    if (selectedFiles.length > 0) {
+      onImport(selectedFiles);
       setIsImportModalOpen(false);
-      setSelectedFile(null);
+      setSelectedFiles([]);
     }
   };
 
@@ -73,11 +74,12 @@ export const StudentList: React.FC<StudentListProps> = ({
     onAddStudent(newStudent);
     setIsModalOpen(false);
     setNewStudent({
-        serialNo: '', registrationNo: '', name: '', fatherName: '', dob: '', formB: '', contact: '', grade: '1'
+        serialNo: '', registrationNo: '', name: '', fatherName: '', gender: 'Male', dob: '', formB: '', contact: '', grade: '1'
     });
   };
 
-  const getAvatarGradient = (name: string) => {
+  const getAvatarGradient = (name: string, gender: Gender) => {
+    if (gender === 'Female') return 'from-pink-400 to-rose-500';
     const colors = ['from-emerald-400 to-teal-500', 'from-blue-400 to-indigo-500', 'from-orange-400 to-red-500', 'from-purple-400 to-pink-500', 'from-cyan-400 to-blue-500'];
     const index = name.length % colors.length;
     return colors[index];
@@ -94,10 +96,10 @@ export const StudentList: React.FC<StudentListProps> = ({
              </div>
              <div>
                 <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight leading-none">{SCHOOL_NAME}</h1>
-                <p className="text-emerald-600 font-semibold text-sm">Student Profiles & Records</p>
+                <p className="text-emerald-600 font-semibold text-sm">Student Management Console</p>
              </div>
            </div>
-           <p className="text-slate-500 max-w-lg text-sm leading-relaxed">Centralized database for managing academic tracking and student biographies.</p>
+           <p className="text-slate-500 max-w-lg text-sm leading-relaxed">View and manage student profiles, grades, and admission records.</p>
         </div>
         
         <div className="flex flex-col items-end gap-3 w-full xl:w-auto">
@@ -108,15 +110,15 @@ export const StudentList: React.FC<StudentListProps> = ({
                         className="w-full flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
                     >
                         <FileSpreadsheet size={18} className="mr-2 text-slate-400" />
-                        Templates
+                        Download Templates
                         <ChevronDown size={14} className={`ml-2 transition-transform duration-200 ${isTemplateMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
                     
                     {isTemplateMenuOpen && (
                         <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 p-2 z-20 animate-in zoom-in-95 duration-100 origin-top-right">
-                             <button onClick={() => { downloadCSVTemplate('bio'); setIsTemplateMenuOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-bold transition-colors"> Admission Form </button>
-                             <button onClick={() => { downloadCSVTemplate('sem1'); setIsTemplateMenuOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-bold transition-colors mt-1"> Semester 1 Marks </button>
-                             <button onClick={() => { downloadCSVTemplate('sem2'); setIsTemplateMenuOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-bold transition-colors mt-1"> Semester 2 Marks </button>
+                             <button onClick={() => { downloadCSVTemplate('bio'); setIsTemplateMenuOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-bold transition-colors">Admission Details</button>
+                             <button onClick={() => { downloadCSVTemplate('sem1'); setIsTemplateMenuOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-bold transition-colors mt-1">Semester 1 Marks</button>
+                             <button onClick={() => { downloadCSVTemplate('sem2'); setIsTemplateMenuOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-bold transition-colors mt-1">Semester 2 Marks</button>
                         </div>
                     )}
                 </div>
@@ -126,17 +128,17 @@ export const StudentList: React.FC<StudentListProps> = ({
                   className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
                 >
                     <Upload size={18} className="mr-2 text-slate-400" />
-                    <span>Import Data</span>
+                    <span>Bulk Upload (CSV)</span>
                 </button>
 
                 <button onClick={onExport} className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all whitespace-nowrap">
                     <FileDown size={18} className="mr-2 text-slate-400" />
-                    Backup
+                    Export Full
                 </button>
 
                 <button onClick={() => setIsModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-bold shadow-lg shadow-emerald-600/30 transition-all active:scale-95">
                     <Plus size={20} className="mr-2" />
-                    New Entry
+                    Add Student
                 </button>
             </div>
         </div>
@@ -147,7 +149,7 @@ export const StudentList: React.FC<StudentListProps> = ({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search student profile..." 
+            placeholder="Search by name, roll no or ID..." 
             className="w-full pl-12 pr-4 py-3 border-none rounded-xl focus:ring-0 outline-none bg-transparent placeholder-slate-400 text-slate-700 font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -161,8 +163,8 @@ export const StudentList: React.FC<StudentListProps> = ({
                 value={filterGrade}
                 onChange={(e) => setFilterGrade(e.target.value as any)}
             >
-                <option value="All">All Grades</option>
-                {GRADES.map(g => <option key={g} value={g}>Class {g}</option>)}
+                <option value="All">All Classes</option>
+                {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
             </select>
         </div>
       </div>
@@ -172,11 +174,12 @@ export const StudentList: React.FC<StudentListProps> = ({
           <table className="w-full text-left text-sm text-slate-600 min-w-[1000px]">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Student Identity</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Academic Info</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Parent Contact</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Results</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px] text-right">Options</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Student Info</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Gender</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Academic</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Contact</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Results Status</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -185,16 +188,25 @@ export const StudentList: React.FC<StudentListProps> = ({
                   <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
-                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(student.name)} flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
+                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(student.name, student.gender)} flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
                                 {student.name.charAt(0)}
                              </div>
                              <div>
                                 <div className="font-bold text-slate-800 uppercase tracking-tight">{student.name}</div>
                                 <div className="text-xs text-slate-400 font-medium">
-                                    F: {student.fatherName} • {student.registrationNo || 'No ID'}
+                                    {student.fatherName} • {student.registrationNo || 'No ID'}
                                 </div>
                              </div>
                         </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                        student.gender === 'Female' 
+                        ? 'bg-pink-50 text-pink-700 border-pink-100' 
+                        : 'bg-blue-50 text-blue-700 border-blue-100'
+                      }`}>
+                        {student.gender}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
@@ -212,17 +224,17 @@ export const StudentList: React.FC<StudentListProps> = ({
                     </td>
                      <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">
-                            <span className={`w-3 h-3 rounded-full ${student.results.sem1 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="S1 (45%)"></span>
-                            <span className={`w-3 h-3 rounded-full ${student.results.sem2 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="S2 (55%)"></span>
+                            <span className={`w-3 h-3 rounded-full ${student.results.sem1 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Sem 1"></span>
+                            <span className={`w-3 h-3 rounded-full ${student.results.sem2 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Sem 2"></span>
                             <span className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
                                 {student.results.sem1 && student.results.sem2 ? 'Complete' : 'Pending'}
                             </span>
                         </div>
                      </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-3 transition-opacity">
+                      <div className="flex items-center justify-end gap-3">
                         <button onClick={() => onSelectStudent(student, 'sem1')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-xs font-bold border border-emerald-100 shadow-sm">
-                            <PenTool size={14} /> Records
+                            <PenTool size={14} /> Marks
                         </button>
                         <button onClick={() => onSelectStudent(student)} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors" title="Profile">
                             <ClipboardList size={18} />
@@ -236,9 +248,9 @@ export const StudentList: React.FC<StudentListProps> = ({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-20 text-center text-slate-400">
                     <Users size={48} className="mx-auto mb-4 opacity-20" />
-                    <p className="text-lg font-bold text-slate-600">No records found</p>
+                    <p className="text-lg font-bold text-slate-600">No students found</p>
                   </td>
                 </tr>
               )}
@@ -254,40 +266,59 @@ export const StudentList: React.FC<StudentListProps> = ({
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <FileUp className="text-emerald-600" size={24} />
-                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Import Data</h3>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Bulk Upload (Excel CSV)</h3>
               </div>
-              <button onClick={() => { setIsImportModalOpen(false); setSelectedFile(null); }} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-xl">×</button>
+              <button onClick={() => { setIsImportModalOpen(false); setSelectedFiles([]); }} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-xl">×</button>
             </div>
             
             <div className="p-8 space-y-6">
               <div className="space-y-4">
                 <div className="space-y-1">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Choose File</label>
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Select one or more CSV files</label>
                    <input 
                       type="file" 
                       accept=".csv" 
+                      multiple
                       onChange={handleFileSelect}
-                      className="block w-full text-sm text-slate-500 border border-slate-200 rounded-lg bg-slate-50 p-2 focus:outline-none"
+                      className="block w-full text-sm text-slate-500 border border-slate-200 rounded-lg bg-slate-50 p-2 focus:outline-none cursor-pointer"
                    />
-                   <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                     Required CSV headers: <span className="font-bold text-slate-500">SerialNo, RegistrationNo, Name, FatherName, Grade, DOB, FormB, Contact</span>
-                   </p>
+                   
+                   <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                      <div className="flex items-start gap-2">
+                        <Info size={16} className="text-slate-400 mt-0.5" />
+                        <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                           <p className="font-bold text-slate-700 mb-1">Excel Compatibility Instructions:</p>
+                           1. Use the <span className="text-emerald-700 font-bold">Download Templates</span> button if you need a guide. <br/>
+                           2. In Excel, always choose <span className="text-emerald-700 font-bold">"CSV (Comma delimited) (*.csv)"</span> when saving. <br/>
+                           3. Headers must match exactly (SerialNo, RegistrationNo, Name, FatherName, Gender, Grade, DOB, FormB, Contact).
+                        </div>
+                      </div>
+                      
+                      {selectedFiles.length > 0 && (
+                        <div className="pt-2 border-t border-slate-200">
+                           <p className="text-[10px] text-emerald-600 font-black uppercase mb-1">Selected Files:</p>
+                           <ul className="text-[11px] text-slate-600 list-disc list-inside">
+                             {selectedFiles.map((f, i) => <li key={i}>{f.name}</li>)}
+                           </ul>
+                        </div>
+                      )}
+                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button 
-                  onClick={() => { setIsImportModalOpen(false); setSelectedFile(null); }} 
-                  className="px-6 py-2 text-slate-400 font-bold text-xs uppercase"
+                  onClick={() => { setIsImportModalOpen(false); setSelectedFiles([]); }} 
+                  className="px-6 py-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-600 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleImportSubmit}
-                  disabled={!selectedFile}
-                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-600/30 text-xs uppercase disabled:opacity-50 disabled:shadow-none"
+                  disabled={selectedFiles.length === 0}
+                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-600/30 text-xs uppercase disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
                 >
-                  Upload Data
+                  <CheckCircle2 size={14} /> Process Files
                 </button>
               </div>
             </div>
@@ -300,7 +331,7 @@ export const StudentList: React.FC<StudentListProps> = ({
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Student Enrollment</h3>
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Register New Student</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-xl">×</button>
             </div>
             
@@ -329,22 +360,33 @@ export const StudentList: React.FC<StudentListProps> = ({
 
               <div className="grid grid-cols-2 gap-6">
                  <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Gender</label>
+                  <select className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-bold text-sm" value={newStudent.gender} onChange={e => setNewStudent({...newStudent, gender: e.target.value as Gender})}>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Grade</label>
                   <select className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-bold text-sm" value={newStudent.grade} onChange={e => setNewStudent({...newStudent, grade: e.target.value as Grade})}>
                     {GRADES.map(g => <option key={g} value={g}>Class {g}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Date of Birth</label>
-                  <input type="date" required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm" value={newStudent.dob} onChange={e => setNewStudent({...newStudent, dob: e.target.value})} />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Date of Birth</label>
+                  <input type="date" required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm" value={newStudent.dob} onChange={e => setNewStudent({...newStudent, dob: e.target.value})} />
+                </div>
+                <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contact No</label>
                   <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm font-mono" placeholder="03XXXXXXXXX" value={newStudent.contact} onChange={e => setNewStudent({...newStudent, contact: e.target.value})} />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Form B / Identity</label>
                   <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm font-mono" placeholder="XXXXX-XXXXXXX-X" value={newStudent.formB} onChange={e => setNewStudent({...newStudent, formB: e.target.value})} />
@@ -353,7 +395,7 @@ export const StudentList: React.FC<StudentListProps> = ({
 
               <div className="pt-6 flex justify-end gap-3 border-t">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-400 font-bold text-sm uppercase">Cancel</button>
-                <button type="submit" className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/30 text-sm uppercase">Register Student</button>
+                <button type="submit" className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/30 text-sm uppercase">Save Student</button>
               </div>
             </form>
           </div>

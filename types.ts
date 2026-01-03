@@ -2,6 +2,8 @@ export type Grade = '1' | '2' | '3' | '4' | '5';
 
 export const GRADES: Grade[] = ['1', '2', '3', '4', '5'];
 
+export type Gender = 'Male' | 'Female' | 'Other';
+
 export type Subject = 
   | 'English' 
   | 'Urdu' 
@@ -31,6 +33,7 @@ export interface Student {
   registrationNo: string; // Admission/Registration No
   name: string;
   fatherName: string;
+  gender: Gender;
   dob: string;
   formB: string; // CNIC/Identity for child
   contact: string;

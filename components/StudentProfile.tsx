@@ -471,6 +471,10 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
               <div className="text-lg text-slate-900 font-bold uppercase">{student.name}</div>
             </div>
             <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider text-slate-400 font-black">Gender</label>
+              <div className="text-lg text-slate-900 font-bold uppercase">{student.gender}</div>
+            </div>
+            <div className="space-y-1">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-black">Guardian Name</label>
               <div className="text-lg text-slate-900 font-semibold uppercase">{student.fatherName}</div>
             </div>

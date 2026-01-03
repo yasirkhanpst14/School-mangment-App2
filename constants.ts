@@ -1,3 +1,4 @@
+
 import { StudentRecord } from "./types";
 
 export const SCHOOL_NAME = "GPS Bazar No 1";
@@ -11,6 +12,8 @@ export const INITIAL_STUDENTS: StudentRecord[] = [
     registrationNo: 'R-2024-001',
     name: 'Ahmed Khan',
     fatherName: 'Bilal Khan',
+    // Fix: Add missing required gender property
+    gender: 'Male',
     dob: '2015-05-12',
     formB: '12345-1234567-1',
     contact: '0300-1234567',
