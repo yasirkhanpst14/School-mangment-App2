@@ -1,6 +1,6 @@
 import { collection, getDocs, setDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { StudentRecord, SUBJECTS } from "../types";
+import { StudentRecord, SUBJECTS, Grade, Gender } from "../types";
 
 const STUDENTS_COLLECTION = 'students';
 const AUTH_COLLECTION = 'admin';
@@ -22,9 +22,12 @@ export const getStudents = async (): Promise<StudentRecord[]> => {
 
 export const saveStudent = async (student: StudentRecord) => {
   try {
+    // Ensure ID is present
+    if (!student.id) throw new Error("Student ID is required for saving.");
     await setDoc(doc(db, STUDENTS_COLLECTION, student.id), student);
   } catch (error) {
-    console.error("Error saving student: ", error);
+    console.error("Error saving student to Firebase: ", error);
+    throw error;
   }
 };
 
@@ -57,6 +60,64 @@ export const saveAdminCredentials = async (creds: {username: string, password: s
   }
 };
 
+/**
+ * Robust CSV Parser for high compatibility with various Excel versions
+ */
+export const robustParseCSV = (text: string): any[] => {
+  // Remove BOM and common hidden characters
+  let cleanText = text.replace(/^\ufeff/, '').replace(/[\u200B-\u200D\uFEFF]/g, '');
+  
+  // Split into lines, handle CRLF and LF
+  const lines = cleanText.split(/\r?\n/).filter(line => line.trim().length > 0);
+  if (lines.length < 1) return [];
+
+  // Detect delimiter (comma vs semicolon)
+  const firstLine = lines[0];
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+  const delimiter = semiCount > commaCount ? ';' : ',';
+
+  const splitLine = (line: string) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === delimiter && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const rawHeaders = splitLine(lines[0]);
+  
+  // Normalize headers: remove quotes, remove spaces, special chars, and lowercase
+  const headers = rawHeaders.map(h => 
+    h.replace(/^"|"$/g, '')
+     .trim()
+     .toLowerCase()
+     .replace(/[^a-z0-9]/g, '') // Strips all symbols and spaces
+  );
+
+  return lines.slice(1).map(line => {
+    const values = splitLine(line);
+    const obj: any = {};
+    headers.forEach((h, i) => {
+      // Clean values: remove outer quotes
+      let val = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
+      obj[h] = val;
+    });
+    return obj;
+  });
+};
+
 const escapeCSV = (val: any) => {
   const str = String(val === null || val === undefined ? '' : val);
   return `"${str.replace(/"/g, '""')}"`;
@@ -73,7 +134,7 @@ export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
     if (type === 'bio') {
         headers = [...idCols, 'Name', 'FatherName', 'Gender', 'Grade', 'DOB', 'FormB', 'Contact'];
         sampleRow = [...idSample, 'Ali Khan', 'Zafar Khan', 'Male', '1', '2016-01-01', '12345-1234567-1', '0300-1234567'];
-        filename = 'Template_Student_Registration.csv';
+        filename = 'Template_Student_Bio.csv';
     } else if (type === 'sem1') {
         const subHeaders = SUBJECTS.map(s => `Sem1_${s}`);
         headers = [...idCols, 'Name', ...subHeaders];
@@ -145,7 +206,7 @@ export const exportToCSV = (students: StudentRecord[]) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `Full_Data_Backup_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `Database_Backup_${new Date().toISOString().split('T')[0]}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();

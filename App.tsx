@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut, UserCircle } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut, UserCircle, Settings, ShieldCheck, Key } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
 import { StudentProfile } from './components/StudentProfile';
@@ -7,7 +7,7 @@ import { AttendanceManager } from './components/AttendanceManager';
 import { Login } from './components/Login';
 import { Chatbot } from './components/Chatbot';
 import { StudentRecord, SUBJECTS, AttendanceStatus, Grade, Gender } from './types';
-import { getStudents, saveStudent, removeStudent, exportToCSV } from './services/storageService';
+import { getStudents, saveStudent, removeStudent, exportToCSV, robustParseCSV } from './services/storageService';
 import { SCHOOL_NAME } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -23,17 +23,32 @@ const App: React.FC = () => {
   const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance'>('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAiConfigured, setIsAiConfigured] = useState(false);
   
   const [session, setSession] = useState<string>(() => {
     return localStorage.getItem('school_session') || '2024-2025';
   });
 
   useEffect(() => {
+    const checkAiKey = async () => {
+        if (window.aistudio) {
+            const hasKey = await window.aistudio.hasSelectedApiKey();
+            setIsAiConfigured(hasKey);
+        }
+    };
+    checkAiKey();
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       if (isAuthenticated) {
         setIsLoading(true);
-        const loaded = await getStudents();
-        setStudents(loaded);
+        try {
+            const loaded = await getStudents();
+            setStudents(loaded);
+        } catch (error) {
+            console.error("Failed to load students:", error);
+        }
         setIsLoading(false);
       }
     };
@@ -63,17 +78,25 @@ const App: React.FC = () => {
       results: {},
       attendance: {}
     };
-    setStudents(prev => [...prev, newStudent]);
-    await saveStudent(newStudent);
+    try {
+        await saveStudent(newStudent);
+        setStudents(prev => [...prev, newStudent]);
+    } catch (e) {
+        alert("Error saving student to database. Please check your connection.");
+    }
   };
 
   const handleDeleteStudent = async (id: string) => {
     if (confirm('Are you sure you want to delete this student record?')) {
-      setStudents(prev => prev.filter(s => s.id !== id));
-      await removeStudent(id);
-      if (selectedStudent?.id === id) {
-        setSelectedStudent(null);
-        setCurrentView('students');
+      try {
+          await removeStudent(id);
+          setStudents(prev => prev.filter(s => s.id !== id));
+          if (selectedStudent?.id === id) {
+            setSelectedStudent(null);
+            setCurrentView('students');
+          }
+      } catch (e) {
+          alert("Could not delete student.");
       }
     }
   };
@@ -86,103 +109,99 @@ const App: React.FC = () => {
   };
 
   const handleUpdateStudent = async (updated: StudentRecord) => {
-    setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
-    if (selectedStudent?.id === updated.id) setSelectedStudent(updated);
-    await saveStudent(updated);
+    try {
+        await saveStudent(updated);
+        setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
+        if (selectedStudent?.id === updated.id) setSelectedStudent(updated);
+    } catch (e) {
+        alert("Failed to update student in database.");
+    }
   };
 
   const handleUpdateAttendance = async (updates: { studentId: string; date: string; status: AttendanceStatus }[]) => {
     const updatedStudents = [...students];
+    const failedIds: string[] = [];
+
     for (const update of updates) {
       const idx = updatedStudents.findIndex(s => s.id === update.studentId);
       if (idx !== -1) {
         const student = { ...updatedStudents[idx] };
         student.attendance = { ...student.attendance, [update.date]: update.status };
-        updatedStudents[idx] = student;
-        await saveStudent(student);
+        try {
+            await saveStudent(student);
+            updatedStudents[idx] = student;
+        } catch (e) {
+            failedIds.push(student.name);
+        }
       }
+    }
+    
+    if (failedIds.length > 0) {
+        alert(`Attendance failed for: ${failedIds.join(', ')}. Please try again.`);
     }
     setStudents(updatedStudents);
   };
 
-  const parseCSV = (text: string) => {
-    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-    if (lines.length < 1) return [];
-    
-    // Improved CSV splitting to handle quoted fields correctly
-    const splitLine = (line: string) => {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') inQuotes = !inQuotes;
-        else if (char === ',' && !inQuotes) {
-          result.push(current.trim());
-          current = '';
-        } else current += char;
-      }
-      result.push(current.trim());
-      return result;
-    };
-
-    const headers = splitLine(lines[0]);
-    return lines.slice(1).map(line => {
-      const values = splitLine(line);
-      const obj: any = {};
-      headers.forEach((h, i) => {
-        obj[h] = values[i] || '';
-      });
-      return obj;
-    });
-  };
-
   const handleImport = async (files: File[]) => {
     let importedCount = 0;
+    let errorCount = 0;
     const currentStudents = [...students];
+
+    setIsLoading(true);
 
     for (const file of files) {
       try {
         const text = await file.text();
-        const data = parseCSV(text);
+        const data = robustParseCSV(text);
         
         for (const row of data) {
-          const serialNo = row['SerialNo'] || row['RollNo'];
-          const regNo = row['RegistrationNo'] || row['AdmissionNo'];
-          const name = row['Name'];
+          // Normalize header keys based on robust parser's alphanumeric cleaning
+          const serialNo = row['serialno'] || row['rollno'] || row['roll'];
+          const regNo = row['registrationno'] || row['admissionno'] || row['regno'] || row['admissionid'];
+          const name = row['name'] || row['studentname'];
           
           if (!serialNo || !name) continue;
 
           // Find existing student by Roll Number or Registration Number
-          let student = currentStudents.find(s => s.serialNo === serialNo || (regNo && s.registrationNo === regNo));
+          let student = currentStudents.find(s => 
+            s.serialNo === serialNo || 
+            (regNo && s.registrationNo === regNo)
+          );
 
           if (student) {
             // Update existing
             const updated = { ...student };
-            
-            // Bio Updates
-            if (row['FatherName']) updated.fatherName = row['FatherName'];
-            if (row['Gender']) updated.gender = row['Gender'] as Gender;
-            if (row['Grade']) updated.grade = row['Grade'] as Grade;
-            if (row['DOB']) updated.dob = row['DOB'];
-            if (row['FormB']) updated.formB = row['FormB'];
-            if (row['Contact']) updated.contact = row['Contact'];
+            if (row['fathername'] || row['guardianname']) updated.fatherName = row['fathername'] || row['guardianname'];
+            if (row['gender']) updated.gender = (row['gender'].charAt(0).toUpperCase() + row['gender'].slice(1).toLowerCase()) as Gender;
+            if (row['grade'] || row['class']) updated.grade = (row['grade'] || row['class']) as Grade;
+            if (row['dob']) updated.dob = row['dob'];
+            if (row['formb'] || row['cnic']) updated.formB = row['formb'] || row['cnic'];
+            if (row['contact'] || row['phone']) updated.contact = row['contact'] || row['phone'];
 
             // Result Updates
             SUBJECTS.forEach(sub => {
-              if (row[`Sem1_${sub}`] !== undefined) {
+              const subLower = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const s1Key = `sem1${subLower}`;
+              const s2Key = `sem2${subLower}`;
+              
+              if (row[s1Key] !== undefined) {
                 if (!updated.results.sem1) updated.results.sem1 = { semester: 1, marks: {} as any };
-                updated.results.sem1.marks[sub] = Number(row[`Sem1_${sub}`]);
+                updated.results.sem1.marks[sub] = Number(row[s1Key]) || 0;
               }
-              if (row[`Sem2_${sub}`] !== undefined) {
+              if (row[s2Key] !== undefined) {
                 if (!updated.results.sem2) updated.results.sem2 = { semester: 2, marks: {} as any };
-                updated.results.sem2.marks[sub] = Number(row[`Sem2_${sub}`]);
+                updated.results.sem2.marks[sub] = Number(row[s2Key]) || 0;
               }
             });
 
-            const idx = currentStudents.findIndex(s => s.id === updated.id);
-            currentStudents[idx] = updated;
-            await saveStudent(updated);
+            try {
+                await saveStudent(updated);
+                const idx = currentStudents.findIndex(s => s.id === updated.id);
+                currentStudents[idx] = updated;
+                importedCount++;
+            } catch (e) {
+                errorCount++;
+            }
           } else {
             // Create new
             const newStudent: StudentRecord = {
@@ -190,36 +209,55 @@ const App: React.FC = () => {
               serialNo,
               registrationNo: regNo || '',
               name,
-              fatherName: row['FatherName'] || '',
-              gender: (row['Gender'] || 'Male') as Gender,
-              grade: (row['Grade'] || '1') as Grade,
-              dob: row['DOB'] || '',
-              formB: row['FormB'] || '',
-              contact: row['Contact'] || '',
+              fatherName: row['fathername'] || row['guardianname'] || '',
+              gender: (row['gender'] ? (row['gender'].charAt(0).toUpperCase() + row['gender'].slice(1).toLowerCase()) : 'Male') as Gender,
+              grade: (row['grade'] || row['class'] || '1') as Grade,
+              dob: row['dob'] || '',
+              formB: row['formb'] || row['cnic'] || '',
+              contact: row['contact'] || row['phone'] || '',
               results: {
-                sem1: row['Sem1_English'] !== undefined ? { 
+                sem1: row['sem1english'] !== undefined ? { 
                   semester: 1, 
-                  marks: SUBJECTS.reduce((acc, sub) => ({...acc, [sub]: Number(row[`Sem1_${sub}`] || 0)}), {} as any)
+                  marks: SUBJECTS.reduce((acc, sub) => {
+                    const subLower = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return {...acc, [sub]: Number(row[`sem1${subLower}`] || 0)};
+                  }, {} as any)
                 } : undefined,
-                sem2: row['Sem2_English'] !== undefined ? { 
+                sem2: row['sem2english'] !== undefined ? { 
                   semester: 2, 
-                  marks: SUBJECTS.reduce((acc, sub) => ({...acc, [sub]: Number(row[`Sem2_${sub}`] || 0)}), {} as any)
+                  marks: SUBJECTS.reduce((acc, sub) => {
+                    const subLower = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return {...acc, [sub]: Number(row[`sem2${subLower}`] || 0)};
+                  }, {} as any)
                 } : undefined
               },
               attendance: {}
             };
-            currentStudents.push(newStudent);
-            await saveStudent(newStudent);
+            try {
+                await saveStudent(newStudent);
+                currentStudents.push(newStudent);
+                importedCount++;
+            } catch (e) {
+                errorCount++;
+            }
           }
-          importedCount++;
         }
       } catch (err) {
         console.error("Error processing file:", file.name, err);
+        errorCount++;
       }
     }
     
     setStudents(currentStudents);
-    alert(`Import complete. Processed ${importedCount} records from selected files.`);
+    setIsLoading(false);
+    alert(`Import complete. Successfully synced ${importedCount} records. Errors: ${errorCount}`);
+  };
+
+  const handleConfigureAi = async () => {
+      if (window.aistudio) {
+          await window.aistudio.openSelectKey();
+          setIsAiConfigured(true); // Proceed assuming success
+      }
   };
 
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
@@ -252,6 +290,17 @@ const App: React.FC = () => {
             <button onClick={() => { setCurrentView('attendance'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${currentView === 'attendance' ? 'bg-amber-500 text-emerald-950 shadow-lg' : 'hover:bg-white/5 text-emerald-100/70 hover:text-white'}`}>
               <CalendarCheck size={20} /> Attendance
             </button>
+            
+            <div className="pt-8 pb-2 px-5">
+                <p className="text-[10px] font-black text-emerald-400/50 uppercase tracking-widest">Configuration</p>
+            </div>
+            
+            <button 
+                onClick={handleConfigureAi}
+                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${isAiConfigured ? 'text-emerald-100/70' : 'text-amber-400 animate-pulse bg-amber-400/10'} hover:bg-white/5 hover:text-white`}
+            >
+              <Key size={20} /> {isAiConfigured ? "AI Key Configured" : "Select AI Project"}
+            </button>
           </nav>
 
           <div className="p-6 border-t border-white/5">
@@ -275,6 +324,11 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {!isAiConfigured && (
+                 <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-[9px] font-black text-amber-700 uppercase animate-in slide-in-from-right">
+                    <ShieldCheck size={12} /> Pro AI features limited
+                 </div>
+            )}
             <div className="text-right hidden sm:block">
               <p className="text-sm font-black text-slate-800 uppercase leading-none">Principal Admin</p>
               <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight mt-1">Institutional Access</p>
@@ -289,7 +343,7 @@ const App: React.FC = () => {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400">
                 <div className="w-12 h-12 border-4 border-emerald-900/10 border-t-emerald-900 rounded-full animate-spin"></div>
-                <p className="font-bold uppercase text-[10px] tracking-widest">Synchronizing Database...</p>
+                <p className="font-bold uppercase text-[10px] tracking-widest">Processing Data Store...</p>
             </div>
           ) : (
             <>

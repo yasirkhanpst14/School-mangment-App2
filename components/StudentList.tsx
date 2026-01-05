@@ -99,7 +99,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                 <p className="text-emerald-600 font-semibold text-sm">Student Management Console</p>
              </div>
            </div>
-           <p className="text-slate-500 max-w-lg text-sm leading-relaxed">View and manage student profiles, grades, and admission records.</p>
+           <p className="text-slate-500 max-w-lg text-sm leading-relaxed">Secure central database for student records, enrollment profiles, and academic results.</p>
         </div>
         
         <div className="flex flex-col items-end gap-3 w-full xl:w-auto">
@@ -128,17 +128,17 @@ export const StudentList: React.FC<StudentListProps> = ({
                   className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
                 >
                     <Upload size={18} className="mr-2 text-slate-400" />
-                    <span>Bulk Upload (CSV)</span>
+                    <span>Upload CSV Data</span>
                 </button>
 
                 <button onClick={onExport} className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all whitespace-nowrap">
                     <FileDown size={18} className="mr-2 text-slate-400" />
-                    Export Full
+                    Export All
                 </button>
 
                 <button onClick={() => setIsModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-bold shadow-lg shadow-emerald-600/30 transition-all active:scale-95">
                     <Plus size={20} className="mr-2" />
-                    Add Student
+                    New Admission
                 </button>
             </div>
         </div>
@@ -149,7 +149,7 @@ export const StudentList: React.FC<StudentListProps> = ({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search by name, roll no or ID..." 
+            placeholder="Search student by name, roll no or ID..." 
             className="w-full pl-12 pr-4 py-3 border-none rounded-xl focus:ring-0 outline-none bg-transparent placeholder-slate-400 text-slate-700 font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -163,7 +163,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                 value={filterGrade}
                 onChange={(e) => setFilterGrade(e.target.value as any)}
             >
-                <option value="All">All Classes</option>
+                <option value="All">All Grades</option>
                 {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
             </select>
         </div>
@@ -171,14 +171,15 @@ export const StudentList: React.FC<StudentListProps> = ({
 
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 min-w-[1000px]">
+          <table className="w-full text-left text-sm text-slate-600 min-w-[1100px]">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Student Info</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Student Identity</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Gender</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Academic</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Contact</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Results Status</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Class / Grade</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Roll Number</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Contact Info</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px]">Result Status</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase tracking-wider text-[10px] text-right">Actions</th>
               </tr>
             </thead>
@@ -188,58 +189,58 @@ export const StudentList: React.FC<StudentListProps> = ({
                   <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
-                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(student.name, student.gender)} flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
+                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(student.name, student.gender)} flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0`}>
                                 {student.name.charAt(0)}
                              </div>
-                             <div>
-                                <div className="font-bold text-slate-800 uppercase tracking-tight">{student.name}</div>
-                                <div className="text-xs text-slate-400 font-medium">
-                                    {student.fatherName} • {student.registrationNo || 'No ID'}
+                             <div className="min-w-0">
+                                <div className="font-bold text-slate-800 uppercase tracking-tight truncate">{student.name}</div>
+                                <div className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">
+                                    {student.fatherName} • ID: {student.registrationNo || 'UNSET'}
                                 </div>
                              </div>
                         </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
-                        student.gender === 'Female' 
-                        ? 'bg-pink-50 text-pink-700 border-pink-100' 
-                        : 'bg-blue-50 text-blue-700 border-blue-100'
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${
+                        student.gender === 'Female' ? 'bg-pink-50 text-pink-700 border-pink-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                       }`}>
                         {student.gender}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100 w-fit">
+                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm whitespace-nowrap">
                             GRADE {student.grade}
-                          </span>
-                          <div className="text-[11px] text-slate-400 font-mono mt-1">ROLL: {student.serialNo}</div>
-                      </div>
+                        </span>
+                    </td>
+                    <td className="px-6 py-4 font-mono font-black text-emerald-900 bg-emerald-50/30 text-center border-x border-slate-50">
+                        {student.serialNo}
                     </td>
                     <td className="px-6 py-4">
-                        <a href={`tel:${student.contact}`} className="flex items-center gap-2 text-slate-700 hover:text-emerald-600 font-bold font-mono transition-colors">
+                        <a href={`tel:${student.contact}`} className="flex items-center gap-2 text-slate-700 hover:text-emerald-600 font-bold font-mono transition-colors whitespace-nowrap">
                             <Phone size={14} className="text-slate-300" />
                             {student.contact}
                         </a>
                     </td>
                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5">
-                            <span className={`w-3 h-3 rounded-full ${student.results.sem1 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Sem 1"></span>
-                            <span className={`w-3 h-3 rounded-full ${student.results.sem2 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Sem 2"></span>
-                            <span className="text-[10px] font-bold text-slate-400 ml-1 uppercase">
-                                {student.results.sem1 && student.results.sem2 ? 'Complete' : 'Pending'}
+                        <div className="flex items-center gap-2">
+                            <div className="flex -space-x-1">
+                                <div className={`w-2 h-2 rounded-full border border-white ${student.results.sem1 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Sem 1"></div>
+                                <div className={`w-2 h-2 rounded-full border border-white ${student.results.sem2 ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Sem 2"></div>
+                            </div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                {student.results.sem1 && student.results.sem2 ? 'Finalized' : 'Incomplete'}
                             </span>
                         </div>
                      </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <button onClick={() => onSelectStudent(student, 'sem1')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-xs font-bold border border-emerald-100 shadow-sm">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => onSelectStudent(student, 'sem1')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase border border-emerald-100 shadow-sm">
                             <PenTool size={14} /> Marks
                         </button>
-                        <button onClick={() => onSelectStudent(student)} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors" title="Profile">
+                        <button onClick={() => onSelectStudent(student)} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors" title="View Profile">
                             <ClipboardList size={18} />
                         </button>
-                        <button onClick={() => onDeleteStudent(student.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Remove">
+                        <button onClick={() => onDeleteStudent(student.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Remove Record">
                             <Trash2 size={18} />
                         </button>
                       </div>
@@ -248,9 +249,10 @@ export const StudentList: React.FC<StudentListProps> = ({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center text-slate-400">
-                    <Users size={48} className="mx-auto mb-4 opacity-20" />
-                    <p className="text-lg font-bold text-slate-600">No students found</p>
+                  <td colSpan={7} className="px-6 py-20 text-center text-slate-400">
+                    <Users size={48} className="mx-auto mb-4 opacity-10" />
+                    <p className="text-lg font-bold text-slate-600 uppercase tracking-tight">No records match your criteria</p>
+                    <p className="text-sm">Try adjusting your filters or search term.</p>
                   </td>
                 </tr>
               )}
@@ -266,7 +268,7 @@ export const StudentList: React.FC<StudentListProps> = ({
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <FileUp className="text-emerald-600" size={24} />
-                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Bulk Upload (Excel CSV)</h3>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Bulk Sync (CSV)</h3>
               </div>
               <button onClick={() => { setIsImportModalOpen(false); setSelectedFiles([]); }} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-xl">×</button>
             </div>
@@ -274,7 +276,7 @@ export const StudentList: React.FC<StudentListProps> = ({
             <div className="p-8 space-y-6">
               <div className="space-y-4">
                 <div className="space-y-1">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Select one or more CSV files</label>
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Select CSV File from local storage</label>
                    <input 
                       type="file" 
                       accept=".csv" 
@@ -285,18 +287,18 @@ export const StudentList: React.FC<StudentListProps> = ({
                    
                    <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                       <div className="flex items-start gap-2">
-                        <Info size={16} className="text-slate-400 mt-0.5" />
+                        <Info size={16} className="text-emerald-600 mt-0.5" />
                         <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                           <p className="font-bold text-slate-700 mb-1">Excel Compatibility Instructions:</p>
-                           1. Use the <span className="text-emerald-700 font-bold">Download Templates</span> button if you need a guide. <br/>
-                           2. In Excel, always choose <span className="text-emerald-700 font-bold">"CSV (Comma delimited) (*.csv)"</span> when saving. <br/>
-                           3. Headers must match exactly (SerialNo, RegistrationNo, Name, FatherName, Gender, Grade, DOB, FormB, Contact).
+                           <p className="font-bold text-slate-700 mb-1 uppercase tracking-tighter">Import Preparation Guide:</p>
+                           1. Use our <span className="text-emerald-700 font-bold">Templates</span> for guaranteed compatibility. <br/>
+                           2. In Excel, save as <span className="text-emerald-700 font-bold">"CSV (Comma delimited)"</span>. <br/>
+                           3. The system will auto-detect <span className="text-indigo-600">Roll No</span>, <span className="text-indigo-600">Grade</span>, and <span className="text-indigo-600">Marks</span>.
                         </div>
                       </div>
                       
                       {selectedFiles.length > 0 && (
                         <div className="pt-2 border-t border-slate-200">
-                           <p className="text-[10px] text-emerald-600 font-black uppercase mb-1">Selected Files:</p>
+                           <p className="text-[10px] text-emerald-600 font-black uppercase mb-1">Files Ready for Sync:</p>
                            <ul className="text-[11px] text-slate-600 list-disc list-inside">
                              {selectedFiles.map((f, i) => <li key={i}>{f.name}</li>)}
                            </ul>
@@ -309,16 +311,16 @@ export const StudentList: React.FC<StudentListProps> = ({
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button 
                   onClick={() => { setIsImportModalOpen(false); setSelectedFiles([]); }} 
-                  className="px-6 py-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-600 transition-colors"
+                  className="px-6 py-2 text-slate-400 font-black text-xs uppercase hover:text-slate-600 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleImportSubmit}
                   disabled={selectedFiles.length === 0}
-                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-600/30 text-xs uppercase disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
+                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-black shadow-lg shadow-emerald-600/30 text-xs uppercase disabled:opacity-50 flex items-center gap-2"
                 >
-                  <CheckCircle2 size={14} /> Process Files
+                  <CheckCircle2 size={14} /> Start Data Sync
                 </button>
               </div>
             </div>
@@ -331,7 +333,7 @@ export const StudentList: React.FC<StudentListProps> = ({
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Register New Student</h3>
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Manual Enrollment</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-xl">×</button>
             </div>
             
@@ -342,18 +344,18 @@ export const StudentList: React.FC<StudentListProps> = ({
                   <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm" placeholder="R-2025-001" value={newStudent.registrationNo} onChange={e => setNewStudent({...newStudent, registrationNo: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Roll No</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Class Roll No</label>
                   <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm" placeholder="101" value={newStudent.serialNo} onChange={e => setNewStudent({...newStudent, serialNo: e.target.value})} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Student Name</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
                     <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} />
                  </div>
                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Father's Name</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Guardian's Name</label>
                     <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm" value={newStudent.fatherName} onChange={e => setNewStudent({...newStudent, fatherName: e.target.value})} />
                  </div>
               </div>
@@ -368,9 +370,9 @@ export const StudentList: React.FC<StudentListProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Grade</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Academic Grade</label>
                   <select className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-bold text-sm" value={newStudent.grade} onChange={e => setNewStudent({...newStudent, grade: e.target.value as Grade})}>
-                    {GRADES.map(g => <option key={g} value={g}>Class {g}</option>)}
+                    {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
                   </select>
                 </div>
               </div>
@@ -381,21 +383,21 @@ export const StudentList: React.FC<StudentListProps> = ({
                   <input type="date" required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm" value={newStudent.dob} onChange={e => setNewStudent({...newStudent, dob: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contact No</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Primary Contact</label>
                   <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm font-mono" placeholder="03XXXXXXXXX" value={newStudent.contact} onChange={e => setNewStudent({...newStudent, contact: e.target.value})} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Form B / Identity</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Child Identity (Form B)</label>
                   <input required className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm font-mono" placeholder="XXXXX-XXXXXXX-X" value={newStudent.formB} onChange={e => setNewStudent({...newStudent, formB: e.target.value})} />
                 </div>
               </div>
 
               <div className="pt-6 flex justify-end gap-3 border-t">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-400 font-bold text-sm uppercase">Cancel</button>
-                <button type="submit" className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/30 text-sm uppercase">Save Student</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-400 font-black text-xs uppercase">Cancel</button>
+                <button type="submit" className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-black shadow-lg shadow-emerald-600/30 text-xs uppercase">Confirm Entry</button>
               </div>
             </form>
           </div>

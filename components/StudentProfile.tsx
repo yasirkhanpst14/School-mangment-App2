@@ -453,7 +453,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
       {activeTab === 'profile' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
           <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-             <h2 className="text-xl font-bold text-slate-800">Biometric Identity</h2>
+             <h2 className="text-xl font-bold text-slate-800">Student Profile</h2>
              <span className="px-4 py-1.5 bg-emerald-100 text-emerald-900 rounded-full text-xs font-bold uppercase tracking-wide border border-emerald-200">Class {student.grade}</span>
           </div>
           

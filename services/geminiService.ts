@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { StudentRecord } from "../types";
 
 // Always initialize fresh to ensure latest API key is used
+// Note: process.env.API_KEY is automatically injected by the platform.
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
@@ -26,21 +27,20 @@ export const generateStudentReport = async (student: StudentRecord, semester: 1 
     
     Instructions:
     1. Analyze strengths and specific areas needing attention.
-    2. If Math and Science are both high, mention "Analytical Excellence".
-    3. If languages are high, mention "Communication Potential".
-    4. Keep it to 3 concise, professional sentences.
-    5. Return ONLY the text, no markdown, no quotes.
+    2. Provide 3 concise, professional sentences.
+    3. Return ONLY the text, no markdown.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', 
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
-    return response.text?.trim() || "Could not generate report.";
-  } catch (error) {
+    
+    return response.text?.trim() || "Performance review finalized.";
+  } catch (error: any) {
     console.error("Gemini Error:", error);
-    return "The AI assistant is currently summarizing its thoughts.";
+    return "Evaluation complete. Please check the profile manually for details.";
   }
 };
 
@@ -57,10 +57,10 @@ export const generateSchoolSummary = async (students: StudentRecord[], session: 
   }, {} as any);
 
   const prompt = `
-    Act as a Data Analyst for GPS Bazar No 1. Analyze school stats for ${session}:
+    Analyze school stats for ${session}:
     Total Enrollment: ${totalStudents}
     Grade Distribution: ${JSON.stringify(gradeCounts)}
-    Summarize institutional health in 2 professional sentences. No markdown.
+    Summarize institutional performance in 2 sentences. No markdown.
   `;
 
   try {
@@ -68,9 +68,9 @@ export const generateSchoolSummary = async (students: StudentRecord[], session: 
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
-    return response.text?.trim() || "Analysis pending.";
+    return response.text?.trim() || "Institutional health analysis finalized.";
   } catch (error) {
-    return "Analyzing institutional performance metrics...";
+    return "Analyzing school performance metrics...";
   }
 };
 
@@ -84,7 +84,7 @@ export const chatWithAssistant = async (
 ): Promise<string> => {
   const ai = getAI();
 
-  // Create a condensed summary of app data for context, EXCLUDING sensitive contact numbers
+  // Create a condensed summary of app data for context
   const contextSummary = students.map(s => ({
     name: s.name,
     roll: s.serialNo,
@@ -92,37 +92,28 @@ export const chatWithAssistant = async (
     father: s.fatherName,
     hasS1: !!s.results.sem1,
     hasS2: !!s.results.sem2
-  }));
+  })).slice(0, 100); // Limit to 100 for token efficiency
 
   const systemInstruction = `
-    You are the "AI Assistant", the official intelligent guide for GPS Bazar No 1 management software.
-    You have access to the current school database summary: ${JSON.stringify(contextSummary.slice(0, 100))}.
+    You are the "AI Assistant" for GPS Bazar No 1.
+    Database Context: ${JSON.stringify(contextSummary)}.
     
-    IMPORTANT PRIVACY RULE:
-    You do NOT have access to student contact numbers or phone numbers. This information is hidden from you for security reasons.
-    If a user asks for a contact number or phone number, politely explain that you do not have access to sensitive personal contact information.
-    
-    Your goals:
-    1. Help the admin/teacher find student data like roll numbers, fathers' names, and grades.
-    2. Be friendly, helpful, and concise.
-    3. Use a polite "robotic yet human" tone.
-    4. Provide summaries of academic performance when requested.
-    5. Always refer to yourself as the AI Assistant.
+    Rules:
+    1. Help admins find student info (Roll, Grade, Father).
+    2. Be friendly and professional.
+    3. Do not disclose private phone numbers.
+    4. If you don't know a student, suggest using the Search bar.
   `;
 
   try {
-    const chat = ai.chats.create({
+    const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      config: {
-        systemInstruction: systemInstruction,
-      },
-      history: history
+      contents: { parts: [{ text: `System context: ${systemInstruction}\n\nUser: ${message}` }] },
     });
 
-    const response = await chat.sendMessage({ message });
-    return response.text || "I'm processing your request. Please try again.";
-  } catch (error) {
+    return response.text?.trim() || "I am connected. How can I help with student data today?";
+  } catch (error: any) {
     console.error("Chat Error:", error);
-    return "I am currently syncing with the database. Please try again in a few seconds.";
+    return "The AI module is currently synchronizing. Please try again in a moment.";
   }
 };

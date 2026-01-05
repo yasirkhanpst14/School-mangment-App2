@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Sparkles, Bot, User, Minus, Maximize2, Move } from 'lucide-react';
+import { X, Send, Sparkles, Bot, User, Minus, Maximize2, Move, Key } from 'lucide-react';
 import { chatWithAssistant } from '../services/geminiService';
 import { StudentRecord } from '../types';
 
@@ -12,6 +12,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [needsKey, setNeedsKey] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([
     { role: 'model', text: 'Assalam-o-Alaikum! I am your AI Assistant. I can help you find student records or analyze grades. What shall we do today?' }
   ]);
@@ -32,8 +33,8 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
   // Handle Dragging
   const onMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     if (isOpen) return; // Disable drag when open for simplicity
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const clientX = 'touches' in e ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = 'touches' in e ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
     
     setIsDragging(true);
     dragRef.current = {
@@ -47,8 +48,8 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
   const onMouseMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isDragging || !dragRef.current) return;
     
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const clientX = 'touches' in e ? (e as TouchEvent).touches[0].clientX : (e as MouseEvent).clientX;
+    const clientY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
     
     const deltaX = clientX - dragRef.current.startX;
     const deltaY = clientY - dragRef.current.startY;
@@ -91,6 +92,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
     setIsLoading(true);
+    setNeedsKey(false);
 
     const history = messages.map(m => ({
       role: m.role,
@@ -99,12 +101,23 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
 
     try {
       const response = await chatWithAssistant(userMessage, history, students);
+      if (response.includes("re-select your AI Project")) {
+          setNeedsKey(true);
+      }
       setMessages(prev => [...prev, { role: 'model', text: response }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'model', text: "Beep boop! Connection lost. Try again?" }]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFixKey = async () => {
+      if (window.aistudio) {
+          await window.aistudio.openSelectKey();
+          setNeedsKey(false);
+          setMessages(prev => [...prev, { role: 'model', text: "Key updated! How can I help you now?" }]);
+      }
   };
 
   const toggleOpen = () => {
@@ -145,7 +158,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
                 <h3 className="text-sm font-black uppercase tracking-wider">AI Assistant</h3>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]"></span>
-                  <span className="text-[10px] font-bold text-indigo-100 uppercase opacity-80">Free Tier Active</span>
+                  <span className="text-[10px] font-bold text-indigo-100 uppercase opacity-80">Connected</span>
                 </div>
               </div>
             </div>
@@ -171,6 +184,14 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
                       : 'bg-white text-slate-700 border border-indigo-50 rounded-tl-none shadow-indigo-100/50'
                     }`}>
                       {msg.text}
+                      {idx === messages.length - 1 && needsKey && (
+                          <button 
+                            onClick={handleFixKey}
+                            className="mt-3 w-full flex items-center justify-center gap-2 p-2 bg-amber-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                          >
+                            <Key size={14} /> Configure Key
+                          </button>
+                      )}
                       {msg.role === 'model' && (
                         <div className="absolute -left-10 bottom-0 p-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hidden sm:block">
                            <Bot size={12} />
@@ -197,7 +218,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ students }) => {
                     type="text" 
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type a message..."
+                    placeholder="Ask about roll numbers, results..."
                     className="flex-1 py-3.5 px-5 bg-slate-100/50 border border-transparent rounded-2xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-400/10 transition-all font-semibold"
                   />
                   <button 
