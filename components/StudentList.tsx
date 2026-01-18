@@ -128,12 +128,12 @@ export const StudentList: React.FC<StudentListProps> = ({
                   className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
                 >
                     <Upload size={18} className="mr-2 text-slate-400" />
-                    <span>Upload CSV Data</span>
+                    <span>Bulk Upload (CSV/Excel)</span>
                 </button>
 
                 <button onClick={onExport} className="flex-1 sm:flex-none flex items-center justify-center px-5 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all whitespace-nowrap">
                     <FileDown size={18} className="mr-2 text-slate-400" />
-                    Export All
+                    Backup Data
                 </button>
 
                 <button onClick={() => setIsModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-bold shadow-lg shadow-emerald-600/30 transition-all active:scale-95">
@@ -268,7 +268,7 @@ export const StudentList: React.FC<StudentListProps> = ({
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <FileUp className="text-emerald-600" size={24} />
-                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Bulk Sync (CSV)</h3>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Bulk Sync (CSV/Excel)</h3>
               </div>
               <button onClick={() => { setIsImportModalOpen(false); setSelectedFiles([]); }} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-xl">×</button>
             </div>
@@ -276,10 +276,10 @@ export const StudentList: React.FC<StudentListProps> = ({
             <div className="p-8 space-y-6">
               <div className="space-y-4">
                 <div className="space-y-1">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Select CSV File from local storage</label>
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Select CSV or Excel file</label>
                    <input 
                       type="file" 
-                      accept=".csv" 
+                      accept=".csv,.xlsx,.xls" 
                       multiple
                       onChange={handleFileSelect}
                       className="block w-full text-sm text-slate-500 border border-slate-200 rounded-lg bg-slate-50 p-2 focus:outline-none cursor-pointer"
@@ -291,8 +291,8 @@ export const StudentList: React.FC<StudentListProps> = ({
                         <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
                            <p className="font-bold text-slate-700 mb-1 uppercase tracking-tighter">Import Preparation Guide:</p>
                            1. Use our <span className="text-emerald-700 font-bold">Templates</span> for guaranteed compatibility. <br/>
-                           2. In Excel, save as <span className="text-emerald-700 font-bold">"CSV (Comma delimited)"</span>. <br/>
-                           3. The system will auto-detect <span className="text-indigo-600">Roll No</span>, <span className="text-indigo-600">Grade</span>, and <span className="text-indigo-600">Marks</span>.
+                           2. Supports <span className="text-emerald-700 font-bold">.xlsx, .xls, and .csv</span> formats. <br/>
+                           3. System will match by <span className="text-indigo-600">Roll No</span> or <span className="text-indigo-600">Admission ID</span>.
                         </div>
                       </div>
                       

@@ -1,6 +1,7 @@
 import { collection, getDocs, setDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { StudentRecord, SUBJECTS, Grade, Gender } from "../types";
+import * as XLSX from "xlsx";
 
 const STUDENTS_COLLECTION = 'students';
 const AUTH_COLLECTION = 'admin';
@@ -52,6 +53,40 @@ export const saveAdminCredentials = async (creds: {username: string, password: s
   } catch (error) {
     console.error("Error saving admin credentials:", error);
   }
+};
+
+/**
+ * Robust parser that handles both CSV and Excel formats
+ */
+export const parseImportFile = async (file: File): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+        
+        // Clean up keys to be lowercase and alphanumeric for fuzzy matching
+        const cleanJson = json.map((row: any) => {
+          const newRow: any = {};
+          Object.keys(row).forEach(key => {
+            const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+            newRow[cleanKey] = row[key];
+          });
+          return newRow;
+        });
+        
+        resolve(cleanJson);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsBinaryString(file);
+  });
 };
 
 export const robustParseCSV = (text: string): any[] => {
@@ -113,7 +148,7 @@ export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
         sample = [...idS, 'Zafar Khan', 'Male', '1', '2016-01-01', '12345-1234567-1', '0300-1234567'];
     } else if (type === 'sem1' || type === 'sem2') {
         const prefix = type === 'sem1' ? 'Sem1_' : 'Sem2_';
-        headers = [...id, ...SUBJECTS.map(s => `${prefix}${s}`)];
+        headers = [...id, ...SUBJECTS.map(s => `${prefix}${s.replace(/ /g, '')}`)];
         sample = [...idS, ...SUBJECTS.map(() => '80')];
     }
 
@@ -127,7 +162,7 @@ export const downloadCSVTemplate = (type: 'bio' | 'sem1' | 'sem2') => {
 };
 
 export const exportToCSV = (students: StudentRecord[]) => {
-  const headers = ['SerialNo', 'RegistrationNo', 'Name', 'FatherName', 'Gender', 'Grade', 'DOB', 'FormB', 'Contact', ...SUBJECTS.map(s => `Sem1_${s}`), ...SUBJECTS.map(s => `Sem2_${s}`)];
+  const headers = ['SerialNo', 'RegistrationNo', 'Name', 'FatherName', 'Gender', 'Grade', 'DOB', 'FormB', 'Contact', ...SUBJECTS.map(s => `Sem1_${s.replace(/ /g, '')}`), ...SUBJECTS.map(s => `Sem2_${s.replace(/ /g, '')}`)];
   const rows = students.map(s => [
     s.serialNo, s.registrationNo, s.name, s.fatherName, s.gender, s.grade, s.dob, s.formB, s.contact,
     ...SUBJECTS.map(sub => s.results.sem1?.marks[sub] ?? ''),
@@ -139,6 +174,6 @@ export const exportToCSV = (students: StudentRecord[]) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `Backup_${new Date().toISOString().split('T')[0]}.csv`;
+  link.download = `Full_Backup_${new Date().toISOString().split('T')[0]}.csv`;
   link.click();
 };

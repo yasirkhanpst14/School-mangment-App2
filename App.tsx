@@ -6,7 +6,7 @@ import { StudentProfile } from './components/StudentProfile';
 import { AttendanceManager } from './components/AttendanceManager';
 import { Login } from './components/Login';
 import { StudentRecord, AttendanceStatus, Grade, Gender } from './types';
-import { getStudents, saveStudent, removeStudent, exportToCSV, robustParseCSV } from './services/storageService';
+import { getStudents, saveStudent, removeStudent, exportToCSV, parseImportFile } from './services/storageService';
 import { SCHOOL_NAME } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -79,7 +79,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (confirm('Delete student record?')) {
+    if (confirm('DANGER: This student record will be permanently deleted from the cloud. Proceed?')) {
       try {
           await removeStudent(id);
           setStudents(prev => prev.filter(s => s.id !== id));
@@ -127,8 +127,10 @@ const App: React.FC = () => {
   const handleImport = async (files: File[]) => {
     setIsLoading(true);
     let importedTotal = 0;
+    let updatedTotal = 0;
     const currentStudents = [...students];
 
+    // Fuzzy header matcher helper
     const getVal = (row: any, keys: string[]) => {
       for (const k of keys) {
         const normalizedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -139,23 +141,24 @@ const App: React.FC = () => {
 
     for (const file of files) {
       try {
-        const text = await file.text();
-        const data = robustParseCSV(text);
+        const data = await parseImportFile(file);
         
         for (const row of data) {
-          const serialNoRaw = getVal(row, ['serialno', 'rollno', 'roll', 'id', 'srno']);
-          const name = getVal(row, ['name', 'studentname', 'fullname']);
-          if (!serialNoRaw || !name) continue;
+          const serialNoRaw = getVal(row, ['serialno', 'rollno', 'roll', 'id', 'srno', 'roll#']);
+          const nameRaw = getVal(row, ['name', 'studentname', 'fullname', 'nameofthestudent']);
+          
+          if (!serialNoRaw || !nameRaw) continue;
 
           const serialNo = String(serialNoRaw).trim();
-          const regNo = String(getVal(row, ['registrationno', 'admissionno', 'regno', 'admissionid']) || '').trim();
-          const father = getVal(row, ['fathername', 'guardianname', 'father']) || '';
-          const grade = getVal(row, ['grade', 'class']) || '1';
-          const genderInput = getVal(row, ['gender', 'sex']) || 'Male';
+          const name = String(nameRaw).trim();
+          const regNo = String(getVal(row, ['registrationno', 'admissionno', 'regno', 'admissionid', 'reg#', 'id']) || '').trim();
+          const father = getVal(row, ['fathername', 'guardianname', 'father', 'fname']) || '';
+          const grade = String(getVal(row, ['grade', 'class', 'level']) || '1').trim();
+          const genderInput = String(getVal(row, ['gender', 'sex']) || 'Male').trim();
           const gender = (genderInput.charAt(0).toUpperCase() + genderInput.slice(1).toLowerCase()) as Gender;
-          const dob = getVal(row, ['dob', 'dateofbirth']) || '';
-          const formB = getVal(row, ['formb', 'cnic', 'identity']) || '';
-          const contact = getVal(row, ['contact', 'phone', 'mobile']) || '';
+          const dob = String(getVal(row, ['dob', 'dateofbirth', 'birthdate']) || '').trim();
+          const formB = String(getVal(row, ['formb', 'cnic', 'identity', 'bform']) || '').trim();
+          const contact = String(getVal(row, ['contact', 'phone', 'mobile', 'phoneno']) || '').trim();
 
           const processMarks = (sem: 1 | 2) => {
             const marks: any = {};
@@ -163,7 +166,7 @@ const App: React.FC = () => {
             const SUBJECTS_LIST = ['English', 'Urdu', 'Pashto', 'Math', 'General Science', 'Social Study', 'Islamiyat', 'Nazira', 'Drawing'];
             SUBJECTS_LIST.forEach(sub => {
               const subKey = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
-              const val = getVal(row, [`sem${sem}${subKey}`, `${subKey}sem${sem}`, `s${sem}${subKey}`, `m${sem}${subKey}`, `marks${sem}${subKey}`]);
+              const val = getVal(row, [`sem${sem}${subKey}`, `${subKey}sem${sem}`, `s${sem}${subKey}`, `m${sem}${subKey}`, `marks${sem}${subKey}`, `s${sem}_${subKey}`]);
               if (val !== undefined && val !== '') {
                 marks[sub] = Number(val) || 0;
                 hasMarks = true;
@@ -172,14 +175,16 @@ const App: React.FC = () => {
             return hasMarks ? { semester: sem, marks, remarks: '', generatedInsight: '' } : null;
           };
 
-          let existing = currentStudents.find(s => 
+          // Find existing by serialNo or regNo
+          let existingIdx = currentStudents.findIndex(s => 
             s.serialNo === serialNo || 
             (regNo && s.registrationNo === regNo)
           );
 
-          if (existing) {
-            const updated = JSON.parse(JSON.stringify(existing));
-            if (father) updated.fatherName = father;
+          if (existingIdx !== -1) {
+            const updated = { ...currentStudents[existingIdx] };
+            updated.name = name;
+            if (father) updated.fatherName = String(father);
             if (grade) updated.grade = grade as Grade;
             updated.gender = gender;
             if (dob) updated.dob = dob;
@@ -192,13 +197,13 @@ const App: React.FC = () => {
             if (m2) updated.results.sem2 = m2;
 
             await saveStudent(updated);
-            const idx = currentStudents.findIndex(s => s.id === updated.id);
-            currentStudents[idx] = updated;
+            currentStudents[existingIdx] = updated;
+            updatedTotal++;
           } else {
             const newId = generateId();
             const newStudent: StudentRecord = {
               id: newId,
-              serialNo, registrationNo: regNo, name, fatherName: father,
+              serialNo, registrationNo: regNo, name, fatherName: String(father),
               gender, grade: grade as Grade, dob, formB, contact,
               results: { 
                 sem1: processMarks(1) || undefined, 
@@ -208,16 +213,19 @@ const App: React.FC = () => {
             };
             await saveStudent(newStudent);
             currentStudents.push(newStudent);
+            importedTotal++;
           }
-          importedTotal++;
         }
       } catch (err) {
         console.error("Critical Failure in Import Stream:", err);
       }
     }
-    setStudents([...currentStudents]);
+    
+    // Refresh student list from source of truth after bulk sync
+    const finalData = await getStudents();
+    setStudents(finalData);
     setIsLoading(false);
-    alert(`Synchronization Finished: ${importedTotal} records successfully persisted to Cloud Database.`);
+    alert(`Bulk Upload Complete:\n- ${importedTotal} New Enrollments\n- ${updatedTotal} Records Updated\nAll data synchronized with Firebase.`);
   };
 
   const handleConfigureAi = async () => {
@@ -309,7 +317,7 @@ const App: React.FC = () => {
             <>
               {currentView === 'dashboard' && <Dashboard students={students} session={session} />}
               {currentView === 'students' && <StudentList students={students} onAddStudent={handleAddStudent} onDeleteStudent={handleDeleteStudent} onSelectStudent={handleViewProfile} onExport={() => exportToCSV(students)} onImport={handleImport} />}
-              {currentView === 'profile' && selectedStudent && <StudentProfile student={selectedStudent} onBack={() => setCurrentView('students')} onUpdate={handleUpdateStudent} initialTab={profileInitialTab} session={session} />}
+              {currentView === 'profile' && selectedStudent && <StudentProfile student={selectedStudent} onBack={() => setCurrentView('students')} onDelete={handleDeleteStudent} onUpdate={handleUpdateStudent} initialTab={profileInitialTab} session={session} />}
               {currentView === 'attendance' && <AttendanceManager students={students} onUpdateBatch={handleUpdateAttendance} />}
             </>
           )}

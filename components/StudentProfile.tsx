@@ -4,19 +4,20 @@ import { SCHOOL_NAME } from '../constants';
 import { 
   ArrowLeft, Save, Sparkles, Printer, FileText, User, Calendar, 
   CreditCard, Phone, Hash, BookOpen, PenTool, Award, 
-  Trash2, Users, ShieldCheck
+  Trash2, Users, ShieldCheck, AlertTriangle
 } from 'lucide-react';
 import { generateStudentReport } from '../services/geminiService';
 
 interface StudentProfileProps {
   student: StudentRecord;
   onBack: () => void;
+  onDelete: (id: string) => void;
   onUpdate: (updatedStudent: StudentRecord) => void;
   initialTab?: 'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance';
   session: string;
 }
 
-export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack, onUpdate, initialTab = 'profile', session }) => {
+export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack, onDelete, onUpdate, initialTab = 'profile', session }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'sem1' | 'sem2' | 'dmc' | 'attendance'>(initialTab);
   const [isEditingMarks, setIsEditingMarks] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -113,11 +114,11 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
             <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between bg-slate-50/50 gap-4">
                  <div>
                     <h3 className="text-xl font-black text-emerald-950 uppercase tracking-tight">Attendance Register</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional presence log</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Official Presence Log</p>
                  </div>
                  <div className="text-center bg-white px-6 py-2 rounded-xl border-2 border-emerald-900 shadow-sm">
                     <div className="text-2xl font-black text-emerald-950 leading-none">{percentage}%</div>
-                    <div className="text-[9px] uppercase font-black text-emerald-600 tracking-widest mt-1">Presence</div>
+                    <div className="text-[9px] uppercase font-black text-emerald-600 tracking-widest mt-1">Aggregate</div>
                  </div>
             </div>
             
@@ -153,7 +154,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-12 text-slate-300 font-bold uppercase text-[10px] tracking-widest">No entries found.</div>
+                    <div className="text-center py-12 text-slate-300 font-bold uppercase text-[10px] tracking-widest">No entries recorded in database.</div>
                 )}
             </div>
         </div>
@@ -192,113 +193,113 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                   onClick={handleDeleteFullDMC} 
                   className="flex items-center gap-2 px-5 py-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all font-black text-[10px] uppercase border border-red-100"
                 >
-                    <Trash2 size={16} /> Reset Profile Results
+                    <Trash2 size={16} /> Reset All Marks
                 </button>
                 <div className="flex flex-col items-end gap-2">
                   <button 
                     onClick={() => window.print()} 
                     className="flex items-center gap-3 px-8 py-3 bg-emerald-950 text-white rounded-xl hover:bg-black shadow-lg transition-all font-black border-b-4 border-amber-400 uppercase text-[10px] tracking-widest active:scale-95"
                   >
-                      <Printer size={18} /> Export Transcript (PDF)
+                      <Printer size={18} /> Save as PDF
                   </button>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic text-center w-full">Choose "Save as PDF" and enable "Background Graphics"</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic text-center w-full">Enable "Background Graphics" in browser print dialog</p>
                 </div>
             </div>
 
-            <div id="dmc-print-area" className="border-[6px] border-emerald-950 p-8 md:p-12 max-w-[210mm] mx-auto bg-white relative shadow-xl overflow-hidden print:shadow-none print:border-[4px] print:p-10">
-                <div className="absolute top-0 left-0 w-full h-2 bg-amber-400"></div>
+            <div id="dmc-print-area" className="border-[8px] border-emerald-950 p-10 md:p-14 max-w-[210mm] mx-auto bg-white relative shadow-xl overflow-hidden print:shadow-none print:border-[4px] print:p-10">
+                <div className="absolute top-0 left-0 w-full h-3 bg-amber-400"></div>
                 
-                <div className="text-center border-b-[3px] border-emerald-950 pb-6 mb-8">
-                    <h1 className="text-4xl font-black text-emerald-950 uppercase tracking-tighter mb-1">{SCHOOL_NAME}</h1>
-                    <div className="flex items-center justify-center gap-4 mt-2">
-                        <div className="h-px bg-emerald-950 flex-1 max-w-[80px]"></div>
-                        <h2 className="text-xl font-black text-slate-800 uppercase tracking-[0.3em]">Official Transcript</h2>
-                        <div className="h-px bg-emerald-950 flex-1 max-w-[80px]"></div>
+                <div className="text-center border-b-[4px] border-emerald-950 pb-8 mb-10">
+                    <h1 className="text-4xl font-black text-emerald-950 uppercase tracking-tighter mb-2">{SCHOOL_NAME}</h1>
+                    <div className="flex items-center justify-center gap-6 mt-3">
+                        <div className="h-[2px] bg-emerald-950 flex-1 max-w-[100px]"></div>
+                        <h2 className="text-2xl font-black text-slate-800 uppercase tracking-[0.4em]">Detailed Marks Certificate</h2>
+                        <div className="h-[2px] bg-emerald-950 flex-1 max-w-[100px]"></div>
                     </div>
-                    <div className="mt-3">
-                        <span className="text-emerald-950 text-[10px] font-black uppercase tracking-[0.3em] bg-emerald-50 px-6 py-2 rounded-full border border-emerald-100">
+                    <div className="mt-4">
+                        <span className="text-emerald-950 text-[11px] font-black uppercase tracking-[0.4em] bg-emerald-50 px-8 py-2 rounded-full border border-emerald-200">
                             Academic Session {session}
                         </span>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-12 gap-y-6 mb-10 text-[12px] font-bold">
+                <div className="grid grid-cols-2 gap-x-12 gap-y-8 mb-12 text-[13px] font-bold">
                     <div className="flex flex-col border-b border-slate-200 pb-2">
-                        <span className="text-[9px] text-emerald-900 uppercase tracking-widest font-black opacity-40 mb-1">Student Name</span>
-                        <span className="text-slate-950 uppercase font-black text-lg tracking-tight">{student.name}</span>
+                        <span className="text-[10px] text-emerald-900 uppercase tracking-widest font-black opacity-50 mb-1">Student Name</span>
+                        <span className="text-slate-950 uppercase font-black text-xl tracking-tight">{student.name}</span>
                     </div>
                     <div className="flex flex-col border-b border-slate-200 pb-2">
-                        <span className="text-[9px] text-emerald-900 uppercase tracking-widest font-black opacity-40 mb-1">Father's Name</span>
-                        <span className="text-slate-950 uppercase font-black text-lg tracking-tight">{student.fatherName}</span>
+                        <span className="text-[10px] text-emerald-900 uppercase tracking-widest font-black opacity-50 mb-1">Father's Name</span>
+                        <span className="text-slate-950 uppercase font-black text-xl tracking-tight">{student.fatherName}</span>
                     </div>
                     <div className="flex flex-col border-b border-slate-200 pb-2">
-                        <span className="text-[9px] text-emerald-900 uppercase tracking-widest font-black opacity-40 mb-1">Class / Grade</span>
-                        <span className="text-slate-950 uppercase font-black text-lg tracking-tight">Grade {student.grade}</span>
+                        <span className="text-[10px] text-emerald-900 uppercase tracking-widest font-black opacity-50 mb-1">Grade Level</span>
+                        <span className="text-slate-950 uppercase font-black text-xl tracking-tight">Grade {student.grade}</span>
                     </div>
                     <div className="flex flex-col border-b border-slate-200 pb-2">
-                        <span className="text-[9px] text-emerald-900 uppercase tracking-widest font-black opacity-40 mb-1">Roll Number</span>
+                        <span className="text-[10px] text-emerald-900 uppercase tracking-widest font-black opacity-50 mb-1">Roll / Serial No</span>
                         <span className="text-emerald-950 font-black text-3xl font-mono tracking-tighter">{student.serialNo}</span>
                     </div>
                 </div>
 
-                <table className="w-full text-[11px] border-collapse border-[3px] border-emerald-950 mb-10">
+                <table className="w-full text-[12px] border-collapse border-[4px] border-emerald-950 mb-12">
                     <thead>
                         <tr className="bg-emerald-950 text-white">
-                            <th className="border border-emerald-900 py-4 px-6 text-left uppercase font-black tracking-widest text-[9px]">Subjects</th>
-                            <th className="border border-emerald-900 py-4 px-2 text-center uppercase font-black tracking-widest text-[9px] w-24">S1 (45%)</th>
-                            <th className="border border-emerald-900 py-4 px-2 text-center uppercase font-black tracking-widest text-[9px] w-24">S2 (55%)</th>
-                            <th className="border border-emerald-900 py-4 px-2 text-center uppercase font-black tracking-widest text-[9px] w-24">Total</th>
+                            <th className="border border-emerald-900 py-5 px-6 text-left uppercase font-black tracking-widest text-[10px]">Subject Portfolio</th>
+                            <th className="border border-emerald-900 py-5 px-2 text-center uppercase font-black tracking-widest text-[10px] w-24">S1 (45%)</th>
+                            <th className="border border-emerald-900 py-5 px-2 text-center uppercase font-black tracking-widest text-[10px] w-24">S2 (55%)</th>
+                            <th className="border border-emerald-900 py-5 px-2 text-center uppercase font-black tracking-widest text-[10px] w-24">Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         {subjectsData.map((row, idx) => (
                             <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                                <td className="border border-emerald-950 py-3.5 px-6 font-black text-slate-800 uppercase tracking-tight">{row.subject}</td>
-                                <td className="border border-emerald-950 py-3.5 px-2 text-center text-slate-500 font-mono font-black">{row.s1W}</td>
-                                <td className="border border-emerald-950 py-3.5 px-2 text-center text-slate-500 font-mono font-black">{row.s2W}</td>
-                                <td className="border border-emerald-950 py-3.5 px-2 text-center font-black text-emerald-950 text-base font-mono bg-emerald-100/10">{row.total}</td>
+                                <td className="border border-emerald-950 py-4 px-6 font-black text-slate-800 uppercase tracking-tight">{row.subject}</td>
+                                <td className="border border-emerald-950 py-4 px-2 text-center text-slate-500 font-mono font-black">{row.s1W}</td>
+                                <td className="border border-emerald-950 py-4 px-2 text-center text-slate-500 font-mono font-black">{row.s2W}</td>
+                                <td className="border border-emerald-950 py-4 px-2 text-center font-black text-emerald-950 text-lg font-mono bg-emerald-100/10">{row.total}</td>
                             </tr>
                         ))}
                     </tbody>
                     <tfoot>
-                        <tr className="bg-emerald-50 font-black text-emerald-950 border-t-[3px] border-emerald-950">
-                            <td className="border border-emerald-950 py-5 px-6 uppercase tracking-[0.2em] text-[11px] font-black">Annual Aggregate</td>
-                            <td colSpan={2} className="border border-emerald-950 py-5 px-2 text-right italic text-[10px] uppercase tracking-tighter pr-6 text-emerald-900 font-black opacity-40">Weighted Result</td>
-                            <td className="border border-emerald-950 py-5 px-2 text-center font-mono text-2xl bg-emerald-100/50">{grandTotalObtained} / {MAX_GRAND_TOTAL}</td>
+                        <tr className="bg-emerald-50 font-black text-emerald-950 border-t-[4px] border-emerald-950">
+                            <td className="border border-emerald-950 py-6 px-6 uppercase tracking-[0.2em] text-[12px] font-black">Final Aggregate</td>
+                            <td colSpan={2} className="border border-emerald-950 py-6 px-2 text-right italic text-[11px] uppercase tracking-tighter pr-8 text-emerald-900 font-black opacity-40">Weighted Combined Score</td>
+                            <td className="border border-emerald-950 py-6 px-2 text-center font-mono text-3xl bg-emerald-100/50">{grandTotalObtained} / {MAX_GRAND_TOTAL}</td>
                         </tr>
                     </tfoot>
                 </table>
 
-                <div className="grid grid-cols-3 gap-6 mb-12">
-                    <div className="bg-white border border-slate-200 p-5 text-center rounded-2xl shadow-sm">
-                        <p className="text-[10px] uppercase font-black text-slate-400 mb-2 tracking-[0.2em]">Percentage</p>
-                        <p className="text-3xl font-black text-slate-950 font-mono tracking-tighter">{percentage}%</p>
+                <div className="grid grid-cols-3 gap-8 mb-14">
+                    <div className="bg-white border border-slate-200 p-6 text-center rounded-3xl shadow-sm">
+                        <p className="text-[11px] uppercase font-black text-slate-400 mb-2 tracking-[0.2em]">Percentage</p>
+                        <p className="text-4xl font-black text-slate-950 font-mono tracking-tighter">{percentage}%</p>
                     </div>
-                    <div className="bg-emerald-950 border-2 border-amber-400 p-5 text-center rounded-2xl shadow-lg">
-                        <p className="text-[10px] uppercase font-black text-amber-300 mb-2 tracking-[0.2em]">Grade</p>
-                        <p className="text-4xl font-black text-white">{grade}</p>
+                    <div className="bg-emerald-950 border-2 border-amber-400 p-6 text-center rounded-3xl shadow-xl">
+                        <p className="text-[11px] uppercase font-black text-amber-300 mb-2 tracking-[0.2em]">Final Grade</p>
+                        <p className="text-5xl font-black text-white">{grade}</p>
                     </div>
-                    <div className="bg-white border border-slate-200 p-5 text-center rounded-2xl shadow-sm">
-                        <p className="text-[10px] uppercase font-black text-slate-400 mb-2 tracking-[0.2em]">Status</p>
-                        <p className={`text-2xl font-black uppercase tracking-tighter ${grade === 'F' ? 'text-red-600' : 'text-emerald-950'}`}>
+                    <div className="bg-white border border-slate-200 p-6 text-center rounded-3xl shadow-sm">
+                        <p className="text-[11px] uppercase font-black text-slate-400 mb-2 tracking-[0.2em]">Academic Status</p>
+                        <p className={`text-3xl font-black uppercase tracking-tighter ${grade === 'F' ? 'text-red-600' : 'text-emerald-950'}`}>
                             {grade === 'F' ? 'FAIL' : 'PASS'}
                         </p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-24 mt-24 mb-10">
+                <div className="grid grid-cols-2 gap-32 mt-24 mb-10">
                     <div className="text-center">
-                        <div className="border-b-2 border-emerald-950 mb-3 w-full"></div>
-                        <p className="font-black text-emerald-950 uppercase text-[10px] tracking-widest">Office Signature</p>
+                        <div className="border-b-[3px] border-emerald-950 mb-4 w-full"></div>
+                        <p className="font-black text-emerald-950 uppercase text-[11px] tracking-widest">Registrar / Office</p>
                     </div>
                     <div className="text-center">
-                        <div className="border-b-2 border-emerald-950 mb-3 w-full"></div>
-                        <p className="font-black text-emerald-950 uppercase text-[10px] tracking-widest">Principal's Seal</p>
+                        <div className="border-b-[3px] border-emerald-950 mb-4 w-full"></div>
+                        <p className="font-black text-emerald-950 uppercase text-[11px] tracking-widest">Principal / Headmaster</p>
                     </div>
                 </div>
                 
-                <div className="text-center text-[9px] text-slate-300 uppercase tracking-[0.6em] font-black border-t border-slate-50 pt-8">
-                    VERIFIED INSTITUTIONAL RECORD • {SCHOOL_NAME}
+                <div className="text-center text-[10px] text-slate-300 uppercase tracking-[0.7em] font-black border-t border-slate-50 pt-10">
+                    OFFICIAL SYSTEM RECORD • VERIFIED DATA
                 </div>
             </div>
         </div>
@@ -310,7 +311,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
     const hasResult = !!result;
     const weightage = sem === 1 ? 0.45 : 0.55;
     
-    // Emerald theme applied to both semesters for visual consistency
+    // Emerald theme applied to both semesters for visual continuity as requested
     const theme = { bg: 'bg-emerald-950', border: 'border-emerald-100', text: 'text-emerald-900', accent: 'bg-emerald-50', primary: 'emerald' };
 
     if (isEditingMarks) {
@@ -322,11 +323,11 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                         <PenTool size={20} />
                     </div>
                     <div>
-                        <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">Semester {sem} Entry</h3>
-                        <p className={`text-[9px] ${theme.text} font-black uppercase tracking-widest mt-1.5`}>Weightage: {Math.round(weightage * 100)}% of Final Result</p>
+                        <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">Semester {sem} Record</h3>
+                        <p className={`text-[9px] ${theme.text} font-black uppercase tracking-widest mt-1.5`}>Weighted Impact: {Math.round(weightage * 100)}%</p>
                     </div>
                 </div>
-                <div className="px-4 py-1.5 bg-slate-100 rounded-lg text-[9px] font-black uppercase text-slate-400 border border-slate-200">Scale: 100 Max</div>
+                <div className="px-4 py-1.5 bg-slate-100 rounded-lg text-[9px] font-black uppercase text-slate-400 border border-slate-200">Scale: 0-100</div>
            </div>
 
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -366,8 +367,8 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
             <div className="w-16 h-16 bg-slate-50 group-hover:bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform group-hover:scale-105">
                 <FileText size={32} className="text-slate-200 group-hover:text-emerald-900" />
             </div>
-            <h3 className="text-slate-950 font-black text-xl mb-3 uppercase tracking-tight">Semester {sem} Data Incomplete</h3>
-            <p className="text-slate-400 mb-8 max-w-xs mx-auto font-bold uppercase text-[9px] tracking-widest leading-loose">Academic log is pending. This semester accounts for {Math.round(weightage * 100)}% of the aggregate.</p>
+            <h3 className="text-slate-950 font-black text-xl mb-3 uppercase tracking-tight">No Results for Semester {sem}</h3>
+            <p className="text-slate-400 mb-8 max-w-xs mx-auto font-bold uppercase text-[9px] tracking-widest leading-loose">Academic log is empty. This segment carries {Math.round(weightage * 100)}% weight.</p>
             <button 
               onClick={(e) => { e.stopPropagation(); initMarks(sem); }}
               className={`px-10 py-3 ${theme.bg} text-white rounded-xl hover:brightness-110 transition-all shadow-lg font-black uppercase text-[10px] tracking-widest border-b-4 border-black/20 active:translate-y-0.5`}
@@ -382,7 +383,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
     const weightedSum = Math.round(totalRaw * weightage);
     const maxPossibleRaw = SUBJECTS.length * 100;
     const maxPossibleWeighted = Math.round(maxPossibleRaw * weightage);
-    // Rounded off percentage
+    // Rounded off percentage to integer
     const percentageRounded = Math.round((totalRaw / maxPossibleRaw) * 100);
 
     return (
@@ -394,10 +395,10 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                 <span className="text-2xl font-black mt-0.5">{Math.round(weightage * 100)}%</span>
              </div>
              <div>
-                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">Semester {sem} Summary</h3>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">Semester {sem} Data</h3>
                 <div className="flex items-center gap-3 mt-2">
                   <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase border tracking-widest bg-emerald-100 text-emerald-900 border-emerald-200`}>
-                    Verified Academic Log
+                    Verified Cloud Data
                   </span>
                 </div>
              </div>
@@ -415,7 +416,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
         <div className="p-6 md:p-8">
            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-inner group">
-                    <p className="text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Total Raw Score</p>
+                    <p className="text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Total Raw score</p>
                     <p className="text-4xl font-black text-slate-900 font-mono tracking-tighter">{totalRaw} <span className="text-sm font-bold text-slate-300">/ {maxPossibleRaw}</span></p>
                     <div className="mt-5 flex items-center gap-4">
                         <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
@@ -425,7 +426,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                     </div>
                 </div>
                 <div className={`${theme.bg} p-6 rounded-2xl shadow-xl text-white relative overflow-hidden group border-b-4 border-black/20`}>
-                    <p className="text-[10px] uppercase font-black text-white/50 mb-3 tracking-widest">Weighted Score</p>
+                    <p className="text-[10px] uppercase font-black text-white/50 mb-3 tracking-widest">Weighted contribution</p>
                     <p className="text-5xl font-black font-mono tracking-tighter">{weightedSum} <span className="text-sm font-bold text-white/20">/ {maxPossibleWeighted}</span></p>
                     <p className="text-[9px] font-black text-white/40 mt-5 uppercase tracking-widest flex items-center gap-2">
                         <Award size={16} className="text-white/60" />
@@ -439,7 +440,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                <thead className="bg-slate-50 border-b border-slate-100 text-[9px] uppercase tracking-widest text-slate-400 font-black">
                  <tr>
                    <th className="py-4 pl-8 text-left">Academic Portfolio</th>
-                   <th className="py-4 text-center">Raw (100)</th>
+                   <th className="py-4 text-center">Score (100)</th>
                    <th className="py-4 pr-8 text-right">Weighted ({Math.round(weightage * 100)}%)</th>
                  </tr>
                </thead>
@@ -505,7 +506,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
       <div className="flex p-1.5 bg-slate-100 rounded-2xl mb-10 no-print w-full overflow-x-auto whitespace-nowrap gap-2 shadow-inner">
         {[
             { id: 'profile', label: 'Biography' },
-            { id: 'attendance', label: 'Attendance' },
+            { id: 'attendance', label: 'Presence' },
             { id: 'sem1', label: 'Semester 1' },
             { id: 'sem2', label: 'Semester 2' },
             { id: 'dmc', label: 'Transcript' }
@@ -533,10 +534,10 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                 </div>
                 <div>
                     <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter leading-none">Biometric Identity</h2>
-                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1.5">Official Institutional Enrollment</p>
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1.5">Official Cloud Database Record</p>
                 </div>
              </div>
-             <span className="px-8 py-2 bg-emerald-950 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Class {student.grade}</span>
+             <span className="px-8 py-2 bg-emerald-950 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Grade {student.grade}</span>
           </div>
           
           <div className="p-8 md:p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -558,21 +559,31 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, onBack,
                 </div>
             ))}
 
-            <div className="md:col-span-2 lg:col-span-3 pt-10 border-t border-slate-50 mt-6">
+            <div className="md:col-span-2 lg:col-span-3 pt-10 border-t border-slate-100 mt-6 flex flex-col items-center">
               <label className="text-[10px] uppercase tracking-[0.4em] text-slate-400 font-black mb-10 block text-center">Primary Emergency Access</label>
-              <div className="flex flex-col items-center">
-                  <a href={`tel:${student.contact}`} className="inline-flex flex-col items-center gap-8 group">
-                    <div className="p-8 bg-emerald-950 text-white rounded-2xl group-hover:scale-105 transition-all shadow-xl border-2 border-amber-400">
-                        <Phone size={44} className="group-hover:rotate-12 transition-transform" />
-                    </div>
-                    <div className="text-4xl text-emerald-950 font-black font-mono tracking-widest">
-                        {student.contact}
-                    </div>
-                  </a>
-                  <div className="mt-8 flex gap-3 items-center bg-emerald-100/50 px-8 py-2 rounded-full border border-emerald-200">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-950">Active Communication Link</span>
-                  </div>
+              <a href={`tel:${student.contact}`} className="inline-flex flex-col items-center gap-8 group mb-12">
+                <div className="p-8 bg-emerald-950 text-white rounded-2xl group-hover:scale-105 transition-all shadow-xl border-2 border-amber-400">
+                    <Phone size={44} className="group-hover:rotate-12 transition-transform" />
+                </div>
+                <div className="text-4xl text-emerald-950 font-black font-mono tracking-widest">
+                    {student.contact}
+                </div>
+              </a>
+
+              <div className="w-full max-w-md border-t border-slate-100 pt-10 mt-6">
+                <div className="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col items-center gap-4">
+                   <div className="flex items-center gap-3 text-red-700 font-black uppercase text-[10px] tracking-widest">
+                      <AlertTriangle size={18} />
+                      Management Actions
+                   </div>
+                   <button 
+                      onClick={() => onDelete(student.id)}
+                      className="w-full py-4 bg-white text-red-600 border-2 border-red-200 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm active:translate-y-0.5"
+                   >
+                      Permanently Delete Student Profile
+                   </button>
+                   <p className="text-[9px] text-red-400 font-bold uppercase tracking-tight">Warning: This operation will remove all marks and attendance history.</p>
+                </div>
               </div>
             </div>
           </div>
