@@ -11,8 +11,8 @@ const BOM = '\ufeff';
 const CRLF = '\r\n';
 
 /**
- * Recursively removes 'undefined' values from an object to ensure Firebase compatibility.
- * Firestore throws errors if any field in an object is 'undefined'.
+ * Recursively removes 'undefined' values and replaces them with null or removes keys 
+ * to ensure Firebase compatibility. Firestore throws errors on 'undefined'.
  */
 const sanitizeForFirestore = (data: any): any => {
   if (data === undefined) return null;
@@ -41,7 +41,6 @@ export const getStudents = async (): Promise<StudentRecord[]> => {
 export const saveStudent = async (student: StudentRecord) => {
   try {
     if (!student.id) throw new Error("Student ID is required.");
-    // Sanitize before saving to prevent 'undefined' errors
     const sanitizedData = sanitizeForFirestore(student);
     await setDoc(doc(db, STUDENTS_COLLECTION, student.id), sanitizedData);
   } catch (error) {
@@ -76,7 +75,7 @@ export const saveAdminCredentials = async (creds: {username: string, password: s
 };
 
 /**
- * Robust parser that handles both CSV and Excel formats
+ * Robust parser that handles both CSV and Excel formats (xlsx, xls, csv)
  */
 export const parseImportFile = async (file: File): Promise<any[]> => {
   return new Promise((resolve, reject) => {
@@ -84,16 +83,18 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
+        // Read as binary to handle diverse Excel formats
+        const workbook = XLSX.read(data, { type: "binary", cellDates: true, cellText: false });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
+        // Convert to JSON with empty string defaults for missing cells
         const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
         
-        // Clean up keys to be lowercase and alphanumeric for fuzzy matching
+        // Clean keys for matching: lowercased and alphanumeric
         const cleanJson = json.map((row: any) => {
           const newRow: any = {};
           Object.keys(row).forEach(key => {
-            const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cleanKey = key.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
             newRow[cleanKey] = row[key];
           });
           return newRow;
@@ -106,49 +107,6 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
     };
     reader.onerror = (err) => reject(err);
     reader.readAsBinaryString(file);
-  });
-};
-
-export const robustParseCSV = (text: string): any[] => {
-  const cleanText = text.replace(/^\ufeff/, '').trim();
-  if (!cleanText) return [];
-
-  const lines = cleanText.split(/\r?\n/);
-  if (lines.length < 2) return [];
-
-  // Delimiter detection
-  const head = lines[0];
-  const delimiter = (head.match(/;/g) || []).length > (head.match(/,/g) || []).length ? ';' : ',';
-
-  const splitLine = (line: string) => {
-    const fields = [];
-    let cur = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') inQuotes = !inQuotes;
-      else if (char === delimiter && !inQuotes) {
-        fields.push(cur.trim());
-        cur = '';
-      } else cur += char;
-    }
-    fields.push(cur.trim());
-    return fields;
-  };
-
-  const rawHeaders = splitLine(lines[0]);
-  const headers = rawHeaders.map(h => 
-    h.replace(/^"|"$/g, '').trim().toLowerCase().replace(/[^a-z0-9]/g, '')
-  );
-
-  return lines.slice(1).map(line => {
-    const values = splitLine(line);
-    const obj: any = {};
-    headers.forEach((h, i) => {
-      let val = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
-      if (h) obj[h] = val;
-    });
-    return obj;
   });
 };
 

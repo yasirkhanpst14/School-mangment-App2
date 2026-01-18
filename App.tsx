@@ -134,7 +134,9 @@ const App: React.FC = () => {
     const getVal = (row: any, keys: string[]) => {
       for (const k of keys) {
         const normalizedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (row[normalizedK] !== undefined && row[normalizedK] !== null) return row[normalizedK];
+        if (row[normalizedK] !== undefined && row[normalizedK] !== null && row[normalizedK] !== '') {
+          return row[normalizedK];
+        }
       }
       return undefined;
     };
@@ -144,27 +146,29 @@ const App: React.FC = () => {
         const data = await parseImportFile(file);
         
         for (const row of data) {
-          const serialNoRaw = getVal(row, ['serialno', 'rollno', 'roll', 'id', 'srno', 'roll#']);
+          // Identify record by Serial No or Admission ID
+          const serialNoRaw = getVal(row, ['serialno', 'rollno', 'roll', 'srno', 'roll#', 'rollnumber']);
           const nameRaw = getVal(row, ['name', 'studentname', 'fullname', 'nameofthestudent']);
           
           if (!serialNoRaw || !nameRaw) continue;
 
           const serialNo = String(serialNoRaw).trim();
           const name = String(nameRaw).trim();
-          const regNo = String(getVal(row, ['registrationno', 'admissionno', 'regno', 'admissionid', 'reg#', 'id']) || '').trim();
-          const father = getVal(row, ['fathername', 'guardianname', 'father', 'fname']) || '';
-          const gradeInput = String(getVal(row, ['grade', 'class', 'level']) || '1').trim();
-          const grade = gradeInput as Grade;
+          const regNo = String(getVal(row, ['registrationno', 'admissionno', 'regno', 'admissionid', 'reg#', 'id', 'admissionno']) || '').trim();
+          const father = getVal(row, ['fathername', 'guardianname', 'father', 'fname', 'fatherfullname']) || '';
+          const gradeInput = String(getVal(row, ['grade', 'class', 'level', 'studentclass']) || '1').trim().replace(/[^0-9]/g, '');
+          const grade = (gradeInput === '' ? '1' : gradeInput) as Grade;
           const genderInput = String(getVal(row, ['gender', 'sex']) || 'Male').trim();
           const gender = (genderInput.charAt(0).toUpperCase() + genderInput.slice(1).toLowerCase()) as Gender;
           const dob = String(getVal(row, ['dob', 'dateofbirth', 'birthdate']) || '').trim();
-          const formB = String(getVal(row, ['formb', 'cnic', 'identity', 'bform']) || '').trim();
-          const contact = String(getVal(row, ['contact', 'phone', 'mobile', 'phoneno']) || '').trim();
+          const formB = String(getVal(row, ['formb', 'cnic', 'identity', 'bform', 'cnicno']) || '').trim();
+          const contact = String(getVal(row, ['contact', 'phone', 'mobile', 'phoneno', 'contactno']) || '').trim();
 
           const processMarks = (sem: 1 | 2) => {
             const marks: any = {};
             let hasMarks = false;
             const SUBJECTS_LIST = ['English', 'Urdu', 'Pashto', 'Math', 'General Science', 'Social Study', 'Islamiyat', 'Nazira', 'Drawing'];
+            
             SUBJECTS_LIST.forEach(sub => {
               const subKey = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
               const val = getVal(row, [
@@ -173,24 +177,30 @@ const App: React.FC = () => {
                 `s${sem}${subKey}`, 
                 `m${sem}${subKey}`, 
                 `marks${sem}${subKey}`, 
-                `s${sem}_${subKey}`
+                `s${sem}_${subKey}`,
+                `semester${sem}${subKey}`,
+                // Fallback for single semester templates
+                sem === 1 ? `sem1${subKey}` : `sem2${subKey}`
               ]);
+              
               if (val !== undefined && val !== '') {
                 marks[sub] = Number(val) || 0;
                 hasMarks = true;
               }
             });
+            
             return hasMarks ? { semester: sem, marks, remarks: '', generatedInsight: '' } : null;
           };
 
-          // Find existing by serialNo or regNo
+          // Find existing record for update
           let existingIdx = currentStudents.findIndex(s => 
             s.serialNo === serialNo || 
             (regNo && s.registrationNo === regNo)
           );
 
           if (existingIdx !== -1) {
-            const updated = { ...currentStudents[existingIdx] };
+            // Update existing
+            const updated = JSON.parse(JSON.stringify(currentStudents[existingIdx]));
             updated.name = name;
             if (father) updated.fatherName = String(father);
             if (grade) updated.grade = grade;
@@ -208,6 +218,7 @@ const App: React.FC = () => {
             currentStudents[existingIdx] = updated;
             updatedTotal++;
           } else {
+            // Create new record
             const newId = generateId();
             const results: any = {};
             const m1 = processMarks(1);
@@ -236,7 +247,7 @@ const App: React.FC = () => {
     const finalData = await getStudents();
     setStudents(finalData);
     setIsLoading(false);
-    alert(`Bulk Upload Complete:\n- ${importedTotal} New Enrollments\n- ${updatedTotal} Records Updated\nAll data synchronized with Firebase.`);
+    alert(`Bulk Upload Complete:\n- ${importedTotal} New Records Created\n- ${updatedTotal} Existing Records Updated\nAll data is secured in the Cloud Database.`);
   };
 
   const handleConfigureAi = async () => {
