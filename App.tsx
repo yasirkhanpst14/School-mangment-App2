@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, GraduationCap, FileBarChart, Menu, X, School, CalendarRange, PenLine, CalendarCheck, LogOut, UserCircle, Settings, ShieldCheck, Key, Edit3, Save, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, School, CalendarRange, CalendarCheck, LogOut, Key, Save, ChevronDown, Menu, X } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
 import { StudentProfile } from './components/StudentProfile';
 import { AttendanceManager } from './components/AttendanceManager';
 import { Login } from './components/Login';
-import { Chatbot } from './components/Chatbot';
-import { StudentRecord, SUBJECTS, AttendanceStatus, Grade, Gender } from './types';
+import { StudentRecord, AttendanceStatus, Grade, Gender } from './types';
 import { getStudents, saveStudent, removeStudent, exportToCSV, robustParseCSV } from './services/storageService';
 import { SCHOOL_NAME } from './constants';
 
@@ -44,7 +43,7 @@ const App: React.FC = () => {
             const loaded = await getStudents();
             setStudents(loaded);
         } catch (error) {
-            console.error("Failed to load students:", error);
+            console.error("Error loading student database:", error);
         }
         setIsLoading(false);
       }
@@ -73,8 +72,9 @@ const App: React.FC = () => {
     try {
         await saveStudent(newStudent);
         setStudents(prev => [...prev, newStudent]);
+        alert(`Success: ${newStudent.name} saved to Cloud Database.`);
     } catch (e) {
-        alert("Persistence error.");
+        alert("Database connection error. Record not saved.");
     }
   };
 
@@ -88,7 +88,7 @@ const App: React.FC = () => {
             setCurrentView('students');
           }
       } catch (e) {
-          alert("Delete failed.");
+          alert("Database error: Unable to remove record.");
       }
     }
   };
@@ -106,7 +106,7 @@ const App: React.FC = () => {
         setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
         if (selectedStudent?.id === updated.id) setSelectedStudent(updated);
     } catch (e) {
-        alert("Update failed.");
+        alert("Persistence error: Could not sync updates with Cloud.");
     }
   };
 
@@ -126,10 +126,9 @@ const App: React.FC = () => {
 
   const handleImport = async (files: File[]) => {
     setIsLoading(true);
-    let imported = 0;
+    let importedTotal = 0;
     const currentStudents = [...students];
 
-    // Fuzzy header matcher helper
     const getVal = (row: any, keys: string[]) => {
       for (const k of keys) {
         const normalizedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -144,11 +143,12 @@ const App: React.FC = () => {
         const data = robustParseCSV(text);
         
         for (const row of data) {
-          const serialNo = getVal(row, ['serialno', 'rollno', 'roll', 'id', 'srno']);
+          const serialNoRaw = getVal(row, ['serialno', 'rollno', 'roll', 'id', 'srno']);
           const name = getVal(row, ['name', 'studentname', 'fullname']);
-          if (!serialNo || !name) continue;
+          if (!serialNoRaw || !name) continue;
 
-          const regNo = getVal(row, ['registrationno', 'admissionno', 'regno', 'admissionid']) || '';
+          const serialNo = String(serialNoRaw).trim();
+          const regNo = String(getVal(row, ['registrationno', 'admissionno', 'regno', 'admissionid']) || '').trim();
           const father = getVal(row, ['fathername', 'guardianname', 'father']) || '';
           const grade = getVal(row, ['grade', 'class']) || '1';
           const genderInput = getVal(row, ['gender', 'sex']) || 'Male';
@@ -160,9 +160,10 @@ const App: React.FC = () => {
           const processMarks = (sem: 1 | 2) => {
             const marks: any = {};
             let hasMarks = false;
-            SUBJECTS.forEach(sub => {
+            const SUBJECTS_LIST = ['English', 'Urdu', 'Pashto', 'Math', 'General Science', 'Social Study', 'Islamiyat', 'Nazira', 'Drawing'];
+            SUBJECTS_LIST.forEach(sub => {
               const subKey = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
-              const val = getVal(row, [`sem${sem}${subKey}`, `${subKey}sem${sem}`, `s${sem}${subKey}`]);
+              const val = getVal(row, [`sem${sem}${subKey}`, `${subKey}sem${sem}`, `s${sem}${subKey}`, `m${sem}${subKey}`, `marks${sem}${subKey}`]);
               if (val !== undefined && val !== '') {
                 marks[sub] = Number(val) || 0;
                 hasMarks = true;
@@ -171,10 +172,13 @@ const App: React.FC = () => {
             return hasMarks ? { semester: sem, marks, remarks: '', generatedInsight: '' } : null;
           };
 
-          let student = currentStudents.find(s => s.serialNo === serialNo || (regNo && s.registrationNo === regNo));
+          let existing = currentStudents.find(s => 
+            s.serialNo === serialNo || 
+            (regNo && s.registrationNo === regNo)
+          );
 
-          if (student) {
-            const updated = JSON.parse(JSON.stringify(student));
+          if (existing) {
+            const updated = JSON.parse(JSON.stringify(existing));
             if (father) updated.fatherName = father;
             if (grade) updated.grade = grade as Grade;
             updated.gender = gender;
@@ -191,25 +195,29 @@ const App: React.FC = () => {
             const idx = currentStudents.findIndex(s => s.id === updated.id);
             currentStudents[idx] = updated;
           } else {
+            const newId = generateId();
             const newStudent: StudentRecord = {
-              id: generateId(),
+              id: newId,
               serialNo, registrationNo: regNo, name, fatherName: father,
               gender, grade: grade as Grade, dob, formB, contact,
-              results: { sem1: processMarks(1) || undefined, sem2: processMarks(2) || undefined },
+              results: { 
+                sem1: processMarks(1) || undefined, 
+                sem2: processMarks(2) || undefined 
+              },
               attendance: {}
             };
             await saveStudent(newStudent);
             currentStudents.push(newStudent);
           }
-          imported++;
+          importedTotal++;
         }
       } catch (err) {
-        console.error("File error:", err);
+        console.error("Critical Failure in Import Stream:", err);
       }
     }
-    setStudents(currentStudents);
+    setStudents([...currentStudents]);
     setIsLoading(false);
-    alert(`Sync Complete: ${imported} records processed.`);
+    alert(`Synchronization Finished: ${importedTotal} records successfully persisted to Cloud Database.`);
   };
 
   const handleConfigureAi = async () => {
@@ -295,7 +303,7 @@ const App: React.FC = () => {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400">
                 <div className="w-10 h-10 border-4 border-emerald-900/10 border-t-emerald-900 rounded-full animate-spin"></div>
-                <p className="font-bold uppercase text-[9px] tracking-widest">Synchronizing Database...</p>
+                <p className="font-bold uppercase text-[9px] tracking-widest">Accessing Cloud Intelligence...</p>
             </div>
           ) : (
             <>
@@ -306,7 +314,6 @@ const App: React.FC = () => {
             </>
           )}
         </div>
-        <Chatbot students={students} />
       </main>
     </div>
   );
