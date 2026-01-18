@@ -10,6 +10,24 @@ const AUTH_DOC_ID = 'credentials';
 const BOM = '\ufeff';
 const CRLF = '\r\n';
 
+/**
+ * Recursively removes 'undefined' values from an object to ensure Firebase compatibility.
+ * Firestore throws errors if any field in an object is 'undefined'.
+ */
+const sanitizeForFirestore = (data: any): any => {
+  if (data === undefined) return null;
+  if (data === null || typeof data !== 'object') return data;
+  if (Array.isArray(data)) return data.map(sanitizeForFirestore);
+  
+  const sanitized: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      sanitized[key] = sanitizeForFirestore(value);
+    }
+  }
+  return sanitized;
+};
+
 export const getStudents = async (): Promise<StudentRecord[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, STUDENTS_COLLECTION));
@@ -23,7 +41,9 @@ export const getStudents = async (): Promise<StudentRecord[]> => {
 export const saveStudent = async (student: StudentRecord) => {
   try {
     if (!student.id) throw new Error("Student ID is required.");
-    await setDoc(doc(db, STUDENTS_COLLECTION, student.id), student);
+    // Sanitize before saving to prevent 'undefined' errors
+    const sanitizedData = sanitizeForFirestore(student);
+    await setDoc(doc(db, STUDENTS_COLLECTION, student.id), sanitizedData);
   } catch (error) {
     console.error("Error saving student:", error);
     throw error;

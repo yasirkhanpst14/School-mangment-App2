@@ -134,7 +134,7 @@ const App: React.FC = () => {
     const getVal = (row: any, keys: string[]) => {
       for (const k of keys) {
         const normalizedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (row[normalizedK] !== undefined) return row[normalizedK];
+        if (row[normalizedK] !== undefined && row[normalizedK] !== null) return row[normalizedK];
       }
       return undefined;
     };
@@ -153,7 +153,8 @@ const App: React.FC = () => {
           const name = String(nameRaw).trim();
           const regNo = String(getVal(row, ['registrationno', 'admissionno', 'regno', 'admissionid', 'reg#', 'id']) || '').trim();
           const father = getVal(row, ['fathername', 'guardianname', 'father', 'fname']) || '';
-          const grade = String(getVal(row, ['grade', 'class', 'level']) || '1').trim();
+          const gradeInput = String(getVal(row, ['grade', 'class', 'level']) || '1').trim();
+          const grade = gradeInput as Grade;
           const genderInput = String(getVal(row, ['gender', 'sex']) || 'Male').trim();
           const gender = (genderInput.charAt(0).toUpperCase() + genderInput.slice(1).toLowerCase()) as Gender;
           const dob = String(getVal(row, ['dob', 'dateofbirth', 'birthdate']) || '').trim();
@@ -166,7 +167,14 @@ const App: React.FC = () => {
             const SUBJECTS_LIST = ['English', 'Urdu', 'Pashto', 'Math', 'General Science', 'Social Study', 'Islamiyat', 'Nazira', 'Drawing'];
             SUBJECTS_LIST.forEach(sub => {
               const subKey = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
-              const val = getVal(row, [`sem${sem}${subKey}`, `${subKey}sem${sem}`, `s${sem}${subKey}`, `m${sem}${subKey}`, `marks${sem}${subKey}`, `s${sem}_${subKey}`]);
+              const val = getVal(row, [
+                `sem${sem}${subKey}`, 
+                `${subKey}sem${sem}`, 
+                `s${sem}${subKey}`, 
+                `m${sem}${subKey}`, 
+                `marks${sem}${subKey}`, 
+                `s${sem}_${subKey}`
+              ]);
               if (val !== undefined && val !== '') {
                 marks[sub] = Number(val) || 0;
                 hasMarks = true;
@@ -185,7 +193,7 @@ const App: React.FC = () => {
             const updated = { ...currentStudents[existingIdx] };
             updated.name = name;
             if (father) updated.fatherName = String(father);
-            if (grade) updated.grade = grade as Grade;
+            if (grade) updated.grade = grade;
             updated.gender = gender;
             if (dob) updated.dob = dob;
             if (formB) updated.formB = formB;
@@ -201,14 +209,17 @@ const App: React.FC = () => {
             updatedTotal++;
           } else {
             const newId = generateId();
+            const results: any = {};
+            const m1 = processMarks(1);
+            const m2 = processMarks(2);
+            if (m1) results.sem1 = m1;
+            if (m2) results.sem2 = m2;
+
             const newStudent: StudentRecord = {
               id: newId,
               serialNo, registrationNo: regNo, name, fatherName: String(father),
-              gender, grade: grade as Grade, dob, formB, contact,
-              results: { 
-                sem1: processMarks(1) || undefined, 
-                sem2: processMarks(2) || undefined 
-              },
+              gender, grade, dob, formB, contact,
+              results,
               attendance: {}
             };
             await saveStudent(newStudent);
